@@ -19,6 +19,7 @@ The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2016-
     System.Data.Entity.Design.dll
     System.Management.Automation.dll
     Newtonsoft.Json.dll
+    platyPS PowerShell module (for generating help files from markdown)
 
     Note:
     The functionality needed by resgen.exe is replaced with a PowerShell function.
@@ -99,14 +100,16 @@ $engineDir = "$RepoDir\out\tmp\engine"
 $rulesDir = "$RepoDir\out\tmp\rules"
 $nugetDir = "$RepoDir\out\tmp\nuget"
 
+$helpDir = "$moduleDir\en-US"
+
 $engineDll = "$engineDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
 $engineRes = "$engineDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.Strings.resources"
 $rulesDll = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
 $rulesRes = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources"
 $nJsonDll = "$nugetDir\Newtonsoft.Json\lib\net45\Newtonsoft.Json.dll"
 
-rmdir $moduleDir, $engineDir, $rulesDir -recurse -force -erroraction silentlycontinue
-mkdir $moduleDir, $engineDir, $rulesDir, $nugetDir -force | out-null
+rmdir $helpDir, $moduleDir, $engineDir, $rulesDir -recurse -force -erroraction silentlycontinue
+mkdir $helpDir, $moduleDir, $engineDir, $rulesDir, $nugetDir -force | out-null
 
 
 
@@ -149,7 +152,7 @@ write-verbose 'Remove unused source files.' -verbose
 
 if ($NoDownload) {
     write-warning "Excluding files that need Newtonsoft.Json.dll" -warningaction continue
-    select-string $enginDir\*.cs, $rulesDir\*.cs -pattern 'using Newtonsoft\.Json\..+;' |
+    select-string $engineDir\*.cs, $rulesDir\*.cs -pattern 'using Newtonsoft\.Json\..+;' |
         select-object -expandproperty path |
         sort -unique |
         foreach {write-warning "Excluding $_"; del $_;}
@@ -211,7 +214,7 @@ write-verbose 'Build script analyzer rules.' -verbose
 
 & $CscExePath `
     /nologo /nostdlib /noconfig `
-    "/out:$rulesDll" `
+    /out:"$rulesDll" `
     /target:library `
     /platform:$Platform `
     /warn:$WarnLevel `
@@ -240,5 +243,14 @@ copy "$RepoDir\Engine\Settings" -recurse $moduleDir
 if (-not $NoDownload) {
     copy $nJsonDll $moduleDir
 }
+
+
+
+write-verbose 'Generate help files' -verbose
+
+copy "$RepoDir\docs\about*.txt" $helpDir
+write-warning "TODO: build module help file with platyps" -warningaction continue
+
+
 
 get-item $moduleDir\*.psd1
