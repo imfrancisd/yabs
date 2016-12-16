@@ -164,6 +164,9 @@ write-verbose 'Generate resource files.' -verbose
 
 function ResGenStr([string]$Path, [string]$Destination)
 {
+    #System.Resources.ResXResourceReader is in System.Windows.Forms.dll
+    add-type -assemblyname system.windows.forms
+
     write-verbose "Convert $Path to $Destination" -verbose
     $reader = new-object System.Resources.ResXResourceReader (get-item $Path).fullname
     try {
