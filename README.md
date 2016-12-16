@@ -12,9 +12,9 @@ Minimal tools means, if possible, only the tools on your computer, which means t
 This is meant for trying out changes on projects without having to worry about .sln, project.json, .yml, .csproj, msbuild, .NET core, to nuget restore or not to nuget restore, and so on.
 
 ## Which projects will these scripts build?
-For now, only PSScriptAnalyzer.
+For now, only PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer).
 
-## Will these script always be updated.
+## Will these scripts always be updated.
 Probably not.
 
 But the scripts will have explicit explanations of what the project depends on, so if you can read PowerShell, you should be able to modify the script if you want.

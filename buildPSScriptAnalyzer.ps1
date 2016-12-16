@@ -2,13 +2,13 @@
 
 <#
 .Synopsis
-Yet another build script for PSScriptAnalyzer (no Visual Studio or .Net Core).
+Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
-Build PSScriptAnalyzer project on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
+Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
 
 Of course, without the build tools from Visual Studio or .Net Core, this means that the built module may not work on other computers, but it will work in your computer, and this build script will allow you to build your changes to PSScriptAnalyzer with tools that come with Windows 10.
 
-The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2016-12-14) are:
+The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2016-12-16) are:
     csc.exe
     resgen.exe
     Microsoft.CSharp.dll
@@ -135,9 +135,9 @@ if (-not $NoDownload) {
 
 write-verbose 'Copy source files.' -verbose
 
-copy $RepoDir\Engine\*.cs $engineDir -recurse
-copy $RepoDir\Engine\*\*.cs $engineDir -recurse
-copy $RepoDir\Rules\*.cs $rulesDir -recurse
+copy $RepoDir\Engine\*.cs $engineDir
+copy $RepoDir\Engine\*\*.cs $engineDir
+copy $RepoDir\Rules\*.cs $rulesDir
 
 copy $RepoDir\Engine\Strings.resx $engineDir
 copy $RepoDir\Rules\Strings.resx $rulesDir
