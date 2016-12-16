@@ -252,7 +252,12 @@ if (-not $NoDownload) {
 write-verbose 'Generate help files' -verbose
 
 copy "$RepoDir\docs\about*.txt" $helpDir
-write-warning "TODO: build module help file with platyps" -warningaction continue
+if ((get-module platyps) -or (get-module platyps -list)) {
+    platyps\New-ExternalHelp -path $RepoDir\docs\markdown -outputpath $helpDir -force | out-null
+}
+else {
+    write-warning "TODO: build module help file with platyps" -warningaction continue
+}
 
 
 
