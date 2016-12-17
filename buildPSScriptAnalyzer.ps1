@@ -8,7 +8,7 @@ Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) 
 
 Of course, without the build tools from Visual Studio or .Net Core, this means that the built module may not work on other computers, but it will work in your computer, and this build script will allow you to build your changes to PSScriptAnalyzer with tools that come with Windows 10.
 
-The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2016-12-16) are:
+The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2016-12-17) are:
     csc.exe
     resgen.exe
     Microsoft.CSharp.dll
@@ -20,6 +20,7 @@ The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2016-
     System.Management.Automation.dll
     Newtonsoft.Json.dll
     platyPS PowerShell module (for generating help files from markdown)
+    pester PowerShell module (for testing the module)
 
     Note:
     The functionality needed by resgen.exe is replaced with a PowerShell function.
@@ -99,7 +100,7 @@ $moduleDir = "$RepoDir\out\PSScriptAnalyzer"
 $engineDir = "$RepoDir\out\tmp\engine"
 $rulesDir = "$RepoDir\out\tmp\rules"
 $nugetDir = "$RepoDir\out\tmp\nuget"
-
+$testDir = "$RepoDir\out\tmp\test"
 $helpDir = "$moduleDir\en-US"
 
 $engineDll = "$engineDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
@@ -108,8 +109,8 @@ $rulesDll = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.
 $rulesRes = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources"
 $nJsonDll = "$nugetDir\Newtonsoft.Json\lib\net45\Newtonsoft.Json.dll"
 
-rmdir $helpDir, $moduleDir, $engineDir, $rulesDir -recurse -force -erroraction silentlycontinue
-mkdir $helpDir, $moduleDir, $engineDir, $rulesDir, $nugetDir -force | out-null
+rmdir $testDir, $helpDir, $moduleDir, $engineDir, $rulesDir -recurse -force -erroraction silentlycontinue
+mkdir $testDir, $helpDir, $moduleDir, $engineDir, $rulesDir, $nugetDir -force | out-null
 
 
 
@@ -162,12 +163,14 @@ if ($NoDownload) {
 
 write-verbose 'Generate resource files.' -verbose
 
-function ResGenStr([string]$Path, [string]$Destination)
+function ResGenStr
 {
+    [cmdletbinding()]
+    param([string]$Path, [string]$Destination)
+
     #System.Resources.ResXResourceReader is in System.Windows.Forms.dll
     add-type -assemblyname system.windows.forms
 
-    write-verbose "Convert $Path to $Destination" -verbose
     $reader = new-object System.Resources.ResXResourceReader (get-item $Path).fullname
     try {
         $resOut = (new-item -itemtype file -path $Destination).fullname
@@ -257,6 +260,39 @@ if ((get-module platyps) -or (get-module platyps -list)) {
 }
 else {
     write-warning "TODO: build module help file with platyps" -warningaction continue
+}
+
+
+
+if (get-module pester -list) {
+    write-verbose 'Create test script.' -verbose
+
+    #Create a test script that will be run with another powershell
+    #so that we do not import the built module's dll to our powershell,
+    #which will cause problems the next time we build the module.
+
+@"
+    #Some tests import the PSScriptAnalyzer module from `$env:PSModulePath.
+    #We can either install PSScriptAnalyzer in `$env:PSModulePath, or
+    #we can temporarily change `$env:PSModulePath.
+
+    `$env:PSModulePath = "$outputDir;`$(`$env:PSModulePath)"
+
+    import-module '$moduleDir'
+    cd '$RepoDir\Tests\Engine'
+    `$engineResults = pester\invoke-pester -passthru
+    cd '$RepoDir\Tests\Rules'
+    `$rulesResults = pester\invoke-pester -passthru
+
+    write-verbose "Test Results (Engine) | Passed: `$(`$engineResults.PassedCount)``tFailed: `$(`$engineResults.FailedCount)``tSkipped: `$(`$engineResults.SkippedCount)" -verbose
+    write-verbose "Test Results (Rules)  | Passed: `$(`$rulesResults.PassedCount)``tFailed: `$(`$rulesResults.FailedCount)``tSkipped: `$(`$rulesResults.SkippedCount)" -verbose
+"@ | out-file "$testDir\testFile.ps1" -encoding utf8
+
+    write-verbose "Run test script: $testDir\testFile.ps1"
+    powershell.exe -noprofile -executionpolicy remotesigned -noninteractive -file "$testDir\testFile.ps1"
+}
+else {
+    write-warning "TODO: test module with pester" -warningaction continue
 }
 
 
