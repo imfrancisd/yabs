@@ -23,11 +23,11 @@ The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2016-
     pester PowerShell module (for testing the module)
 
     Note:
-    The functionality needed by resgen.exe is replaced with a PowerShell function.
+    resgen.exe is replaced with a PowerShell function, which requires
+    microsoft.csharp.dll, system.dll, system.design.dll and system.windows.forms.dll.
 
     Note:
-    Newtonsoft.Json.dll requires download, but only one PSScriptAnalyzer rule needs it:
-    UseCompatibleCmdlets rule.
+    Newtonsoft.Json.dll requires download.
 
     Use the -NoDownload switch if you do not want to download Newtonsoft.Json.dll.
 
@@ -168,8 +168,11 @@ function ResGenStr
     [cmdletbinding()]
     param([string]$Path, [string]$Destination)
 
-    #System.Resources.ResXResourceReader is in System.Windows.Forms.dll
+    add-type -assemblyname system.design
     add-type -assemblyname system.windows.forms
+
+    $classname = [System.IO.Path]::GetFileNameWithoutExtension($Destination).Split('.')[-1]
+    $namespace = [System.IO.Path]::GetFileNameWithoutExtension($Destination) -replace "\.$classname`$", ''
 
     $reader = new-object System.Resources.ResXResourceReader (get-item $Path).fullname
     try {
@@ -177,19 +180,17 @@ function ResGenStr
         $writer = new-object System.Resources.ResourceWriter $resOut
         try     {$reader.GetEnumerator() | foreach {$writer.AddResource($_.Key, $_.Value)}}
         finally {$writer.Close()}
+
+        $csOut = [System.IO.StreamWriter]::new(($resOut -replace '\.resources$', '.cs'))
+        try {
+            $csProvider = [Microsoft.CSharp.CSharpCodeProvider]::new()
+            $compileUnit = [System.Resources.Tools.StronglyTypedResourceBuilder]::Create($Path, $classname, $namespace, $csprovider, $true, [ref](new-variable dontcare -passthru))
+            $csProvider.GenerateCodeFromCompileUnit($compileUnit, $csOut, [System.CodeDom.Compiler.CodeGeneratorOptions]::new())
+        }
+        finally {$csOut.Close()}
     }
     finally {$reader.Close()}
 }
-
-pushd "$RepoDir"
-try {
-    .\New-StronglyTypedCsFileForResx.ps1 -project engine
-    .\New-StronglyTypedCsFileForResx.ps1 -project rules
-
-    move .\Engine\Strings.cs $engineDir -force
-    move .\Rules\Strings.cs $rulesDir -force
-}
-finally {popd}
 
 resGenStr "$engineDir\Strings.resx" $engineRes
 resGenStr "$rulesDir\Strings.resx" $rulesRes
@@ -267,17 +268,16 @@ else {
 if (get-module pester -list) {
     write-verbose 'Create test script.' -verbose
 
-    #Create a test script that will be run with another powershell
-    #so that we do not import the built module's dll to our powershell,
-    #which will cause problems the next time we build the module.
-
 @"
+    #Run this test script with another powershell
+    #so that you do not import the built module's dll to your powershell,
+    #which will cause problems the next time you build the module.
+    #
     #Some tests import the PSScriptAnalyzer module from `$env:PSModulePath.
     #We can either install PSScriptAnalyzer in `$env:PSModulePath, or
     #we can temporarily change `$env:PSModulePath.
 
     `$env:PSModulePath = "$outputDir;`$(`$env:PSModulePath)"
-
     import-module '$moduleDir'
     cd '$RepoDir\Tests\Engine'
     `$engineResults = pester\invoke-pester -passthru
@@ -288,7 +288,7 @@ if (get-module pester -list) {
     write-verbose "Test Results (Rules)  | Passed: `$(`$rulesResults.PassedCount)``tFailed: `$(`$rulesResults.FailedCount)``tSkipped: `$(`$rulesResults.SkippedCount)" -verbose
 "@ | out-file "$testDir\testFile.ps1" -encoding utf8
 
-    write-verbose "Run test script: $testDir\testFile.ps1"
+    write-verbose "Run test script: $testDir\testFile.ps1" -verbose
     powershell.exe -noprofile -executionpolicy remotesigned -noninteractive -file "$testDir\testFile.ps1"
 }
 else {
