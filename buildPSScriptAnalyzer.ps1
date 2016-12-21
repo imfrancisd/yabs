@@ -109,8 +109,8 @@ $rulesDll = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.
 $rulesRes = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources"
 $nJsonDll = "$nugetDir\Newtonsoft.Json\lib\net45\Newtonsoft.Json.dll"
 
-rmdir $testDir, $helpDir, $moduleDir, $engineDir, $rulesDir -recurse -force -erroraction silentlycontinue
-mkdir $testDir, $helpDir, $moduleDir, $engineDir, $rulesDir, $nugetDir -force | out-null
+remove-item $testDir, $helpDir, $moduleDir, $engineDir, $rulesDir -recurse -force -erroraction silentlycontinue
+new-item -itemtype directory $testDir, $helpDir, $moduleDir, $engineDir, $rulesDir, $nugetDir -force | out-null
 
 
 
@@ -127,7 +127,7 @@ if (-not $NoDownload) {
     if (-not (test-path $nJsonDll)) {
         invoke-webRequest 'https://www.nuget.org/api/v2/package/Newtonsoft.Json/9.0.1' -outfile "$nugetDir\Newtonsoft.Json.zip" -verbose
         expand-archive "$nugetDir\Newtonsoft.Json.zip" -destinationpath "$nugetDir\Newtonsoft.Json" -force
-        del "$nugetDir\Newtonsoft.Json.zip"
+        remove-item "$nugetDir\Newtonsoft.Json.zip"
     }
     write-verbose "Newtonsoft.Json.dll: $nJsonDll" -verbose
 }
@@ -136,35 +136,34 @@ if (-not $NoDownload) {
 
 write-verbose 'Copy source files.' -verbose
 
-copy $RepoDir\Engine\*.cs $engineDir
-copy $RepoDir\Engine\*\*.cs $engineDir
-copy $RepoDir\Rules\*.cs $rulesDir
+copy-item $RepoDir\Engine\*.cs $engineDir
+copy-item $RepoDir\Engine\*\*.cs $engineDir
+copy-item $RepoDir\Rules\*.cs $rulesDir
 
-copy $RepoDir\Engine\Strings.resx $engineDir
-copy $RepoDir\Rules\Strings.resx $rulesDir
+copy-item $RepoDir\Engine\Strings.resx $engineDir
+copy-item $RepoDir\Rules\Strings.resx $rulesDir
 
 
 
 write-verbose 'Remove unused source files.' -verbose
 
 "$engineDir\GetScriptAnalyzerLoggerCommand.cs", "$engineDir\Strings.Designer.cs", "$rulesDir\Strings.Designer.cs" |
-    where {test-path $_} |
-    foreach {del $_}
+    where-object {test-path $_} |
+    foreach-object {remove-item $_}
 
 if ($NoDownload) {
     write-warning "Excluding files that need Newtonsoft.Json.dll" -warningaction continue
     select-string $engineDir\*.cs, $rulesDir\*.cs -pattern 'using Newtonsoft\.Json\..+;' |
         select-object -expandproperty path |
-        sort -unique |
-        foreach {write-warning "Excluding $_"; del $_;}
+        sort-object -unique |
+        foreach-object {write-warning "Excluding $_"; remove-item $_;}
 }
 
 
 
 write-verbose 'Generate resource files.' -verbose
 
-function ResGenStr
-{
+function ResGenStr {
     [cmdletbinding()]
     param([string]$Path, [string]$Destination)
 
@@ -178,7 +177,7 @@ function ResGenStr
     try {
         $resOut = (new-item -itemtype file -path $Destination).fullname
         $writer = new-object System.Resources.ResourceWriter $resOut
-        try     {$reader.GetEnumerator() | foreach {$writer.AddResource($_.Key, $_.Value)}}
+        try     {$reader.GetEnumerator() | foreach-object {$writer.AddResource($_.Key, $_.Value)}}
         finally {$writer.Close()}
 
         $csOut = [System.IO.StreamWriter]::new(($resOut -replace '\.resources$', '.cs'))
@@ -242,20 +241,20 @@ write-verbose 'Build script analyzer rules.' -verbose
 
 write-verbose 'Copy module files.' -verbose
 
-copy $engineDll,$rulesDll $moduleDir
-copy "$RepoDir\Engine\PSScriptAnalyzer.ps[dm]1" $moduleDir
-copy "$RepoDir\Engine\ScriptAnalyzer.*.ps1xml" $moduleDir
-copy "$RepoDir\Engine\Settings" -recurse $moduleDir
+copy-item $engineDll,$rulesDll $moduleDir
+copy-item "$RepoDir\Engine\PSScriptAnalyzer.ps[dm]1" $moduleDir
+copy-item "$RepoDir\Engine\ScriptAnalyzer.*.ps1xml" $moduleDir
+copy-item "$RepoDir\Engine\Settings" -recurse $moduleDir
 
 if (-not $NoDownload) {
-    copy $nJsonDll $moduleDir
+    copy-item $nJsonDll $moduleDir
 }
 
 
 
 write-verbose 'Generate help files' -verbose
 
-copy "$RepoDir\docs\about*.txt" $helpDir
+copy-item "$RepoDir\docs\about*.txt" $helpDir
 if ((get-module platyps) -or (get-module platyps -list)) {
     platyps\New-ExternalHelp -path $RepoDir\docs\markdown -outputpath $helpDir -force | out-null
 }
