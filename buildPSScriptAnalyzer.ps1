@@ -8,7 +8,7 @@ Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) 
 
 Of course, without the build tools from Visual Studio or .Net Core, this means that the built module may not work on other computers, but it will work in your computer, and this build script will allow you to build your changes to PSScriptAnalyzer with tools that come with Windows 10.
 
-The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2016-12-17) are:
+The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2016-12-31) are:
     csc.exe
     resgen.exe
     Microsoft.CSharp.dll
@@ -106,9 +106,9 @@ $nJsonDll = "$nugetDir\Newtonsoft.Json\lib\net45\Newtonsoft.Json.dll"
 
 
 
-write-verbose 'Creating output directories.'
+write-verbose 'Create output directory structure.' -verbose
 
-if ($PSCmdlet.ShouldProcess($outputDir, 'Create Directory')) {
+if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
     $moduleDir, $engineDir, $rulesDir, $testDir |
         where-object {test-path $_} |
         foreach-object {remove-item $_ -recurse -force -confirm:$false}
@@ -119,7 +119,7 @@ if ($PSCmdlet.ShouldProcess($outputDir, 'Create Directory')) {
 
 
 
-write-verbose 'Find external dependencies' -verbose
+write-verbose 'Find external dependencies.' -verbose
 
 #May need to download Roslyn (Microsoft.Net.Compilers) from nuget.org if project uses new CSharp language features.
 if (($CscExePath -eq '') -or (-not (test-path $CscExePath))) {
@@ -193,8 +193,13 @@ function ResGenStr {
     }
 }
 
-ResGenStr "$engineDir\Strings.resx" $engineRes
-ResGenStr "$rulesDir\Strings.resx" $rulesRes
+if ($PSCmdlet.ShouldProcess("$engineRes and its .cs file", 'Create resource files')) {
+    ResGenStr "$engineDir\Strings.resx" $engineRes -confirm:$false
+}
+
+if ($PSCmdlet.ShouldProcess("$rulesRes and its .cs file", 'Create resource files')) {
+   ResGenStr "$rulesDir\Strings.resx" $rulesRes -confirm:$false
+}
 
 
 
@@ -256,27 +261,32 @@ if ($PSCmdlet.ShouldProcess($rulesDll, 'Create File')) {
 
 
 
-write-verbose 'Create Module' -verbose
+write-verbose 'Create PSScriptAnalyzer Module.' -verbose
 
-if ($PSCmdlet.ShouldProcess("$RepoDir\Engine", 'Copy module files')) {
+if ($PSCmdlet.ShouldProcess($engineDll, 'Copy dll')) {
+    copy-item $engineDll $moduleDir -confirm:$false
+}
+
+if ($PSCmdlet.ShouldProcess($rulesDll, 'Copy dll')) {
+    copy-item $rulesDll $moduleDir -confirm:$false
+}
+
+if ((test-path $nJsonDll) -and $PSCmdlet.ShouldProcess($nJsonDll, 'Copy dll')) {
+    copy-item $nJsonDll $moduleDir -confirm:$false
+}
+
+if ($PSCmdlet.ShouldProcess("$RepoDir\Engine", 'Copy psd1, psm1, ps1xml, and settings files')) {
     copy-item "$RepoDir\Engine\PSScriptAnalyzer.ps[dm]1" $moduleDir -confirm:$false
     copy-item "$RepoDir\Engine\ScriptAnalyzer.*.ps1xml" $moduleDir -confirm:$false
     copy-item "$RepoDir\Engine\Settings" -recurse $moduleDir -confirm:$false
 }
 
-if ($PSCmdlet.ShouldProcess("$outputDir\tmp", 'Copy module files')) {
-    copy-item $engineDll, $rulesDll $moduleDir -confirm:$false
-    if (test-path $nJsonDll) {
-        copy-item $nJsonDll $moduleDir -confirm:$false
-    }
-}
 
 
-
-write-verbose 'Generate help files' -verbose
+write-verbose 'Generate PSScriptAnalyzer Module help files.' -verbose
 
 $helpDir = "$moduleDir\en-US"
-if ($PSCmdlet.ShouldProcess($helpDir, 'Create Directory')) {
+if ($PSCmdlet.ShouldProcess($helpDir, 'Create PSScriptAnalyzer Module Help Directory')) {
     new-item -itemtype directory $helpDir -confirm:$false | out-null
     copy-item "$RepoDir\docs\about*.txt" $helpDir -confirm:$false
     if ((get-module platyps) -or (get-module platyps -list)) {
@@ -289,10 +299,10 @@ if ($PSCmdlet.ShouldProcess($helpDir, 'Create Directory')) {
 
 
 
-write-verbose 'Run tests' -verbose
+write-verbose 'Run tests.' -verbose
 
-$testFile = "$testDir\testFile.ps1"
-if ($PSCmdlet.ShouldProcess($testFile, 'Create Script')) {
+$testFile = "$testDir\testRunner.ps1"
+if ($PSCmdlet.ShouldProcess($testFile, 'Create script that runs tests')) {
     @"
     #Run this test script with another powershell
     #so that you do not import the built module's dll to your powershell,
@@ -317,7 +327,7 @@ if ($PSCmdlet.ShouldProcess($testFile, 'Create Script')) {
     out-file $testFile -encoding utf8 -force -confirm:$false
 }
 
-if ($PSCmdlet.ShouldProcess($testFile, 'Run script')) {
+if ($PSCmdlet.ShouldProcess($testFile, 'Run script that runs tests')) {
     if (get-module pester -list) {
         powershell.exe -noprofile -executionpolicy remotesigned -noninteractive -file "$testFile"
     }
@@ -328,6 +338,6 @@ if ($PSCmdlet.ShouldProcess($testFile, 'Run script')) {
 
 
 
-if (test-path "$moduleDir\*.psd1") {
+if ((-not $WhatIfPreference) -and (test-path "$moduleDir\*.psd1")) {
     get-item "$moduleDir\*.psd1"
 }
