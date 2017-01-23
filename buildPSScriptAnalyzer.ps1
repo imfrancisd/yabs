@@ -30,18 +30,11 @@ The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2017-
     csc.exe might require download.
     Newtonsoft.Json.dll requires download.
 
-    Use the -NoDownload switch if you do not want to download anything.
-
 .Example
 .\buildPSScriptAnalyzer.ps1 -RepoDir $env:HOMEPATH\Desktop\PSScriptAnalyzer
 If you have the PSScriptAnalyzer repo in your Desktop, then this example will build that repo.
 
 The path to the module psd1 file will be the output of this script.
-.Example
-.\buildPSScriptAnalyzer.ps1 -RepoDir $env:HOMEPATH\Desktop\PSScriptAnalyzer -NoDownload
-Same as the previous example, except that Newtonsoft.Json.dll will not be downloaded from nuget.org.
-
-Without this dll, some rules may be excluded from the build.
 #>
 [CmdletBinding(SupportsShouldProcess)]
 [OutputType([System.IO.FileInfo])]
@@ -50,10 +43,6 @@ param(
     [Parameter(Mandatory, Position=0)]
     [string]
     $RepoDir,
-
-    #Try to build without downloading anything.
-    [switch]
-    $NoDownload,
 
     #Compiler option.
     #Find more information at:
@@ -107,10 +96,14 @@ $rulesDir = "$RepoDir\out\tmp\rules"
 $nugetDir = "$RepoDir\out\tmp\nuget"
 $testDir = "$RepoDir\out\tmp\test"
 
-$engineDll = "$engineDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
+$engineDll = "$moduleDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
 $engineRes = "$engineDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.Strings.resources"
-$rulesDll = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
+$rulesDll = "$moduleDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
 $rulesRes = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources"
+
+$unusedSourceFiles = @(
+    "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"
+)
 
 
 
@@ -129,7 +122,7 @@ if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
 
 write-verbose 'Find external dependencies.' -verbose
 
-function getNugetResource {
+function GetNugetResource {
     [cmdletbinding(SupportsShouldProcess)]
     param([string]$NugetDir, [string]$PackageName, [string]$PackageVersion, [string]$RelativePath)
 
@@ -147,41 +140,42 @@ function getNugetResource {
     }
 
     if (-not (test-path $resourcePath)) {
-        $resourcePath = ''
+        throw "Could not find nuget resource: $resourcePath"
     }
 
     $resourcePath
 }
 
-if ((-not $NoDownload) -and [string]::IsNullOrWhiteSpace($NewtonsoftJsonDllPath)) {
-    $NewtonsoftJsonDllPath = getNugetResource $nugetDir 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll'
-}
-
-if ((-not $NoDownload) -and [string]::IsNullOrWhiteSpace($CscExePath)) {
-    $CscExePath = getNugetResource $nugetDir 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe'
+if ([string]::IsNullOrWhiteSpace($NewtonsoftJsonDllPath)) {
+    if ($PSCmdlet.ShouldProcess('Newtonsoft.Json', 'Download nuget package.')) {
+        $NewtonsoftJsonDllPath = GetNugetResource $nugetDir 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -confirm:$false
+    }
+    else {
+        #If Newtonsoft.Json is explicitly not downloaded, do not throw here.
+        #Let the compiler throw so that the error will say which file actually needs Newtonsoft.Json.dll.
+        #They can then modify or remove that file if they wish.
+        $NewtonsoftJsonDllPath = ""
+    }
 }
 
 if ([string]::IsNullOrWhiteSpace($CscExePath)) {
-    $CscExePath = join-path ([System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()) 'csc.exe'
+    if ($PSCmdlet.ShouldProcess('Microsoft.Net.Compilers', 'Download nuget package')) {
+        try   {$CscExePath = GetNugetResource $nugetDir 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -confirm:$false}
+        catch {$CscExePath = join-path ([System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()) 'csc.exe'}
+    }
+    else {
+        $CscExePath = join-path ([System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()) 'csc.exe'
+    }
 }
 
 
 
-write-verbose 'Copy source files.' -verbose
+write-verbose 'Renaming unused source files.' -verbose
 
-if ($PSCmdlet.ShouldProcess("$RepoDir\Engine", 'Copy source files')) {
-    get-childitem "$RepoDir\Engine" -recurse |
-        where-object {$_.extension -match '^\.(cs|resx)$'} |
-        where-object {$_.name -ne 'GetScriptAnalyzerLoggerCommand.cs'} |
-        where-object {$_.name -ne 'Strings.Designer.cs'} |
-        foreach-object {copy-item $_.fullname $engineDir -confirm:$false}
-}
-
-if ($PSCmdlet.ShouldProcess("$RepoDir\Rules", 'Copy source files')) {
-    get-childitem "$RepoDir\Rules" -recurse |
-        where-object {$_.extension -match '^\.(cs|resx)$'} |
-        where-object {$_.name -ne 'Strings.Designer.cs'} |
-        foreach-object {copy-item $_.fullname $rulesDir -confirm:$false}
+foreach ($item in $unusedSourceFiles) {
+    if ((test-path $item) -and $PSCmdlet.ShouldProcess($item, 'Add ".unused" extension')) {
+        move-item $item "$item.unused" -confirm:$false -force
+    }
 }
 
 
@@ -190,16 +184,20 @@ write-verbose 'Generate resource files.' -verbose
 
 function ResGenStr {
     [cmdletbinding(SupportsShouldProcess)]
-    param([string]$Path, [string]$Destination)
+    param([string]$Path, [string]$Destination, [string]$Namespace, [string]$ClassName)
 
     add-type -assemblyname system.design
     add-type -assemblyname system.windows.forms
 
     $resxIn = [System.IO.Path]::GetFullPath($Path)
     $resourcesOut = [System.IO.Path]::GetFullPath($Destination)
-    $csharpSrcOut = [System.IO.Path]::ChangeExtension($resourcesOut, 'cs')
-    $classname = [System.IO.Path]::GetFileNameWithoutExtension($Destination).Split('.')[-1]
-    $namespace = [System.IO.Path]::GetFileNameWithoutExtension($Destination) -replace "\.*$classname`$", ''
+    $csharpSrcOut = [System.IO.Path]::ChangeExtension($resxIn, 'Designer.cs')
+    if (-not $PSBoundParameters.ContainsKey('ClassName')) {
+        $ClassName = [System.IO.Path]::GetFileNameWithoutExtension($resourcesOut).Split('.')[-1]
+    }
+    if (-not $PSBoundParameters.ContainsKey('Namespace')) {
+        $Namespace = [System.IO.Path]::GetFileNameWithoutExtension($resourcesOut) -replace "\.*$classname`$", ''
+    }
 
     if ($PSCmdlet.ShouldProcess($resourcesOut, 'Create File')) {
         $reader = [System.Resources.ResXResourceReader]::new($resxIn)
@@ -215,7 +213,7 @@ function ResGenStr {
         $csProvider = [Microsoft.CSharp.CSharpCodeProvider]::new()
         try {
             $resxErrors = $null
-            $compileUnit = [System.Resources.Tools.StronglyTypedResourceBuilder]::Create($resxIn, $classname, $namespace, $csprovider, $true, [ref]$resxErrors)
+            $compileUnit = [System.Resources.Tools.StronglyTypedResourceBuilder]::Create($resxIn, $ClassName, $Namespace, $csprovider, $true, [ref]$resxErrors)
             $writer = [System.IO.StreamWriter]::new($csharpSrcOut)
             try     {$csProvider.GenerateCodeFromCompileUnit($compileUnit, $writer, [System.CodeDom.Compiler.CodeGeneratorOptions]::new())}
             finally {$writer.Close()}
@@ -225,11 +223,11 @@ function ResGenStr {
 }
 
 if ($PSCmdlet.ShouldProcess("$engineRes and its .cs file", 'Create resource files')) {
-    ResGenStr "$engineDir\Strings.resx" $engineRes -confirm:$false
+    ResGenStr "$RepoDir\Engine\Strings.resx" $engineRes -confirm:$false
 }
 
 if ($PSCmdlet.ShouldProcess("$rulesRes and its .cs file", 'Create resource files')) {
-   ResGenStr "$rulesDir\Strings.resx" $rulesRes -confirm:$false
+   ResGenStr "$RepoDir\Rules\Strings.resx" $rulesRes -confirm:$false
 }
 
 
@@ -252,11 +250,11 @@ if ($PSCmdlet.ShouldProcess($engineDll, 'Create File')) {
         /r:System.ComponentModel.Composition.dll `
         /r:"$([powershell].assembly.location)" `
         /res:"$engineRes" `
-        /recurse:"$engineDir\*.cs"
-}
+        /recurse:"$RepoDir\Engine\*.cs"
 
-if ($PSCmdlet.ShouldProcess($engineDll, 'Copy dll')) {
-    copy-item $engineDll $moduleDir -confirm:$false
+    if (-not (test-path $engineDll)) {
+        throw "Could not create file: $engineDll"
+    }
 }
 
 
@@ -264,15 +262,6 @@ if ($PSCmdlet.ShouldProcess($engineDll, 'Copy dll')) {
 write-verbose 'Build script analyzer rules.' -verbose
 
 if ($PSCmdlet.ShouldProcess($rulesDll, 'Create File')) {
-    $jsonMissing = $NewtonsoftJsonDllPath -eq ""
-    if ($jsonMissing) {
-        write-warning "Excluding files that need Newtonsoft.Json.dll" -warningaction continue
-        select-string $rulesDir\*.cs -pattern 'using Newtonsoft\.Json\..+;' |
-            select-object -expandproperty path |
-            sort-object -unique |
-            foreach-object {write-warning "Excluding $_"; remove-item $_ -confirm:$false;}
-    }
-
     write-verbose "csc.exe: $CscExePath" -verbose
     & $CscExePath `
         /nologo /nostdlib /noconfig `
@@ -289,13 +278,13 @@ if ($PSCmdlet.ShouldProcess($rulesDll, 'Create File')) {
         /r:System.Data.Entity.Design.dll `
         /r:"$([powershell].assembly.location)" `
         /r:"$engineDll" `
-        $(if ($jsonMissing) {""} else {"/r:`"$NewtonsoftJsonDllPath`""}) `
+        $(if ($NewtonsoftJsonDllPath) {"/r:`"$NewtonsoftJsonDllPath`""}) `
         /res:"$rulesRes" `
-        /recurse:"$rulesDir\*.cs"
-}
+        /recurse:"$RepoDir\Rules\*.cs"
 
-if ($PSCmdlet.ShouldProcess($rulesDll, 'Copy dll')) {
-    copy-item $rulesDll $moduleDir -confirm:$false
+    if (-not (test-path $rulesDll)) {
+        throw "Could not create file: $rulesDll"
+    }
 }
 
 
@@ -352,8 +341,8 @@ if ($PSCmdlet.ShouldProcess($testFile, 'Create script that runs tests')) {
     set-location '$RepoDir\Tests\Rules'
     `$rulesResults = pester\invoke-pester -passthru
 
-    write-verbose "Test Results (Engine) | Passed: `$(`$engineResults.PassedCount) Failed: `$(`$engineResults.FailedCount) Skipped: `$(`$engineResults.SkippedCount)" -verbose
-    write-verbose "Test Results (Rules)  | Passed: `$(`$rulesResults.PassedCount) Failed: `$(`$rulesResults.FailedCount) Skipped: `$(`$rulesResults.SkippedCount)" -verbose
+    write-verbose "Test Results (Engine) | Passed: `$(`$engineResults.PassedCount), Failed: `$(`$engineResults.FailedCount), Skipped: `$(`$engineResults.SkippedCount)" -verbose
+    write-verbose "Test Results (Rules)  | Passed: `$(`$rulesResults.PassedCount), Failed: `$(`$rulesResults.FailedCount), Skipped: `$(`$rulesResults.SkippedCount)" -verbose
 "@ |
     out-file $testFile -encoding utf8 -force -confirm:$false
 }
