@@ -8,8 +8,8 @@ Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) 
 
 Of course, without the build tools from Visual Studio or .Net Core, this means that the built module may not work on other computers, but it will work in your computer, and this build script will allow you to build your changes to PSScriptAnalyzer with tools that come with Windows 10.
 
-The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2016-12-31) are:
-    csc.exe
+The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2017-01-23) are:
+    csc.exe (Roslyn compiler)
     resgen.exe
     Microsoft.CSharp.dll
     mscorlib.dll
@@ -27,9 +27,10 @@ The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2016-
     microsoft.csharp.dll, system.dll, system.design.dll and system.windows.forms.dll.
 
     Note:
+    csc.exe might require download.
     Newtonsoft.Json.dll requires download.
 
-    Use the -NoDownload switch if you do not want to download Newtonsoft.Json.dll.
+    Use the -NoDownload switch if you do not want to download anything.
 
 .Example
 .\buildPSScriptAnalyzer.ps1 -RepoDir $env:HOMEPATH\Desktop\PSScriptAnalyzer
@@ -50,8 +51,7 @@ param(
     [string]
     $RepoDir,
 
-    #Do not download anything.
-    #PSScriptAnalyzer rules that requires Newtonsoft.Json.dll will not be built.
+    #Try to build without downloading anything.
     [switch]
     $NoDownload,
 
@@ -76,14 +76,23 @@ param(
     #    https://msdn.microsoft.com/en-us/library/13b90fz7.aspx
     [ValidateSet('0', '1', '2', '3', '4')]
     [string]
-    $WarnLevel = '3',
+    $WarnLevel = '4',
 
-    #Path to the csc.exe file (C# compiler).
+    #Path to the csc.exe file (Roslyn C# compiler).
     #
     #Note:
-    #If you do not specify a path here, the script will try to find it in $env:Path, and if the script cannot find it in $env:Path, it will use the csc.exe in [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory(), which is typically 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe' or something similar.
+    #If you do not specify a path, the script will try to find "csc.exe" in $env:Path.
+    #If the script cannot find "csc.exe" in $env:Path, the script will try to download "csc.exe" from the nuget.org package "Microsoft.Net.Compilers".
+    #If the script cannot find "csc.exe" from the nuget.org package "Microsoft.Net.Compilers", the script will try to use "csc.exe" from [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory().
     [string]
-    $CscExePath = (get-command -name csc.exe -erroraction silentlycontinue).path
+    $CscExePath = (get-command -name csc.exe -erroraction silentlycontinue).path,
+
+    #Path to the Newtonsoft.Json.dll file.
+    #
+    #Note:
+    #If you do not specify a path, the script will try to download "Newtonsoft.Json.dll" from the nuget.org package "Newtonsoft.Json".
+    [string]
+    $NewtonsoftJsonDllPath = ""
 )
 
 
@@ -102,7 +111,6 @@ $engineDll = "$engineDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
 $engineRes = "$engineDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.Strings.resources"
 $rulesDll = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
 $rulesRes = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources"
-$nJsonDll = "$nugetDir\Newtonsoft.Json\lib\net45\Newtonsoft.Json.dll"
 
 
 
@@ -121,17 +129,40 @@ if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
 
 write-verbose 'Find external dependencies.' -verbose
 
-#May need to download Roslyn (Microsoft.Net.Compilers) from nuget.org if project uses new CSharp language features.
-if (($CscExePath -eq '') -or (-not (test-path $CscExePath))) {
-    $CscExePath = join-path ([System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()) 'csc.exe'
+function getNugetResource {
+    [cmdletbinding(SupportsShouldProcess)]
+    param([string]$NugetDir, [string]$PackageName, [string]$PackageVersion, [string]$RelativePath)
+
+    $packageUrl = "https://www.nuget.org/api/v2/package/$PackageName/$PackageVersion"
+    $packageDir = join-path $NugetDir "$PackageName$(if ($PackageVersion) {".$PackageVersion"} else {''})"
+    $packageZip = "$packageDir.zip"
+    $resourcePath = join-path $packageDir $RelativePath
+
+    if ((-not (test-path $resourcePath)) -and $PSCmdlet.ShouldProcess($packageUrl, 'Download nuget package')) {
+        invoke-webrequest $packageUrl -outfile $packageZip -verbose
+        if (test-path $packageZip) {
+            expand-archive $packageZip -destinationpath $packageDir -force
+            remove-item $packageZip -confirm:$false
+        }
+    }
+
+    if (-not (test-path $resourcePath)) {
+        $resourcePath = ''
+    }
+
+    $resourcePath
 }
 
-if ((-not $NoDownload) -and (-not (test-path $nJsonDll)) -and $PSCmdlet.ShouldProcess('https://www.nuget.org/api/v2/package/Newtonsoft.Json/9.0.1', 'Download nuget package')) {
-    invoke-webRequest 'https://www.nuget.org/api/v2/package/Newtonsoft.Json/9.0.1' -outfile "$nugetDir\Newtonsoft.Json.zip" -verbose
-    if (test-path "$nugetDir\Newtonsoft.Json.zip") {
-        expand-archive "$nugetDir\Newtonsoft.Json.zip" -destinationpath "$nugetDir\Newtonsoft.Json" -force
-        remove-item "$nugetDir\Newtonsoft.Json.zip" -confirm:$false
-    }
+if ((-not $NoDownload) -and [string]::IsNullOrWhiteSpace($NewtonsoftJsonDllPath)) {
+    $NewtonsoftJsonDllPath = getNugetResource $nugetDir 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll'
+}
+
+if ((-not $NoDownload) -and [string]::IsNullOrWhiteSpace($CscExePath)) {
+    $CscExePath = getNugetResource $nugetDir 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe'
+}
+
+if ([string]::IsNullOrWhiteSpace($CscExePath)) {
+    $CscExePath = join-path ([System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()) 'csc.exe'
 }
 
 
@@ -224,12 +255,16 @@ if ($PSCmdlet.ShouldProcess($engineDll, 'Create File')) {
         /recurse:"$engineDir\*.cs"
 }
 
+if ($PSCmdlet.ShouldProcess($engineDll, 'Copy dll')) {
+    copy-item $engineDll $moduleDir -confirm:$false
+}
+
 
 
 write-verbose 'Build script analyzer rules.' -verbose
 
 if ($PSCmdlet.ShouldProcess($rulesDll, 'Create File')) {
-    $jsonMissing = -not (test-path $nJsonDll)
+    $jsonMissing = $NewtonsoftJsonDllPath -eq ""
     if ($jsonMissing) {
         write-warning "Excluding files that need Newtonsoft.Json.dll" -warningaction continue
         select-string $rulesDir\*.cs -pattern 'using Newtonsoft\.Json\..+;' |
@@ -254,25 +289,21 @@ if ($PSCmdlet.ShouldProcess($rulesDll, 'Create File')) {
         /r:System.Data.Entity.Design.dll `
         /r:"$([powershell].assembly.location)" `
         /r:"$engineDll" `
-        $(if ($jsonMissing) {""} else {"/r:`"$nJsonDll`""}) `
+        $(if ($jsonMissing) {""} else {"/r:`"$NewtonsoftJsonDllPath`""}) `
         /res:"$rulesRes" `
         /recurse:"$rulesDir\*.cs"
-}
-
-
-
-write-verbose 'Create PSScriptAnalyzer Module.' -verbose
-
-if ($PSCmdlet.ShouldProcess($engineDll, 'Copy dll')) {
-    copy-item $engineDll $moduleDir -confirm:$false
 }
 
 if ($PSCmdlet.ShouldProcess($rulesDll, 'Copy dll')) {
     copy-item $rulesDll $moduleDir -confirm:$false
 }
 
-if ((test-path $nJsonDll) -and $PSCmdlet.ShouldProcess($nJsonDll, 'Copy dll')) {
-    copy-item $nJsonDll $moduleDir -confirm:$false
+
+
+write-verbose 'Create PSScriptAnalyzer Module.' -verbose
+
+if (-not [string]::IsNullOrWhiteSpace($NewtonsoftJsonDllPath) -and $PSCmdlet.ShouldProcess($NewtonsoftJsonDllPath, 'Copy dll')) {
+    copy-item $NewtonsoftJsonDllPath $moduleDir -confirm:$false
 }
 
 if ($PSCmdlet.ShouldProcess("$RepoDir\Engine", 'Copy psd1, psm1, ps1xml, and settings files')) {
