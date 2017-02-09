@@ -8,7 +8,7 @@ Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) 
 
 Of course, without the build tools from Visual Studio or .Net Core, this means that the built module may not work on other computers, but it will work in your computer, and this build script will allow you to build your changes to PSScriptAnalyzer with tools that come with Windows 10.
 
-The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2017-01-23) are:
+The minimum requirements to build PSScriptAnalyzer for PowerShell 5 (as of 2017-02-09) are:
     csc.exe (Roslyn compiler)
     resgen.exe
     Microsoft.CSharp.dll
@@ -40,7 +40,7 @@ The path to the module psd1 file will be the output of this script.
 [OutputType([System.IO.FileInfo])]
 param(
     #Path to the repository directory.
-    [Parameter(Mandatory, Position=0)]
+    [Parameter(Mandatory, Position = 0)]
     [string]
     $RepoDir,
 
@@ -67,12 +67,18 @@ param(
     [string]
     $WarnLevel = '4',
 
+    #Path to the .NET directory.
+    #
+    #Note:
+    #If you do not specify a path, the script will use [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory(), which will have a value similar to "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\".
+    $DotNetDir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory(),
+
     #Path to the csc.exe file (Roslyn C# compiler).
     #
     #Note:
     #If you do not specify a path, the script will try to find "csc.exe" in $env:Path.
     #If the script cannot find "csc.exe" in $env:Path, the script will try to download "csc.exe" from the nuget.org package "Microsoft.Net.Compilers".
-    #If the script cannot find "csc.exe" from the nuget.org package "Microsoft.Net.Compilers", the script will try to use "csc.exe" from [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory().
+    #If the script cannot find "csc.exe" from the nuget.org package "Microsoft.Net.Compilers", the script will try to use "csc.exe" from the path from -DotNetDir parameter.
     [string]
     $CscExePath = (get-command -name csc.exe -erroraction silentlycontinue).path,
 
@@ -88,7 +94,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$RepoDir = (get-item $RepoDir).FullName
+$RepoDir = (get-item $RepoDir).FullName -replace '[\\/]$', ''
+$DotNetDir = (get-item $DotNetDir).FullName -replace '[\\/]$', ''
 $outputDir = "$RepoDir\out"
 $moduleDir = "$RepoDir\out\PSScriptAnalyzer"
 $engineDir = "$RepoDir\out\tmp\engine"
@@ -126,6 +133,7 @@ function GetNugetResource {
     [cmdletbinding(SupportsShouldProcess)]
     param([string]$NugetDir, [string]$PackageName, [string]$PackageVersion, [string]$RelativePath)
 
+    $NugetDir = $NugetDir -replace '[\\/]$', ''
     $packageUrl = "https://www.nuget.org/api/v2/package/$PackageName/$PackageVersion"
     $packageDir = join-path $NugetDir "$PackageName$(if ($PackageVersion) {".$PackageVersion"} else {''})"
     $packageZip = "$packageDir.zip"
@@ -160,11 +168,11 @@ if ([string]::IsNullOrWhiteSpace($NewtonsoftJsonDllPath)) {
 
 if ([string]::IsNullOrWhiteSpace($CscExePath)) {
     if ($PSCmdlet.ShouldProcess('Microsoft.Net.Compilers', 'Download nuget package')) {
-        try   {$CscExePath = GetNugetResource $nugetDir 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -confirm:$false}
-        catch {$CscExePath = join-path ([System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()) 'csc.exe'}
+        try {$CscExePath = GetNugetResource $nugetDir 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -confirm:$false}
+        catch {$CscExePath = join-path $DotNetDir 'csc.exe'}
     }
     else {
-        $CscExePath = join-path ([System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()) 'csc.exe'
+        $CscExePath = join-path $DotNetDir 'csc.exe'
     }
 }
 
@@ -203,19 +211,18 @@ function ResGenStr {
         $reader = [System.Resources.ResXResourceReader]::new($resxIn)
         try {
             $writer = [System.Resources.ResourceWriter]::new($resourcesOut)
-            try     {$reader.GetEnumerator() | foreach-object {$writer.AddResource($_.Key, $_.Value)}}
+            try {$reader.GetEnumerator() | foreach-object {$writer.AddResource($_.Key, $_.Value)}}
             finally {$writer.Close()}
         }
         finally {$reader.Close()}
     }
-
     if ($PSCmdlet.ShouldProcess($csharpSrcOut, 'Create File')) {
         $csProvider = [Microsoft.CSharp.CSharpCodeProvider]::new()
         try {
             $resxErrors = $null
             $compileUnit = [System.Resources.Tools.StronglyTypedResourceBuilder]::Create($resxIn, $ClassName, $Namespace, $csprovider, $true, [ref]$resxErrors)
             $writer = [System.IO.StreamWriter]::new($csharpSrcOut)
-            try     {$csProvider.GenerateCodeFromCompileUnit($compileUnit, $writer, [System.CodeDom.Compiler.CodeGeneratorOptions]::new())}
+            try {$csProvider.GenerateCodeFromCompileUnit($compileUnit, $writer, [System.CodeDom.Compiler.CodeGeneratorOptions]::new())}
             finally {$writer.Close()}
         }
         finally {$csProvider.Dispose()}
@@ -227,7 +234,7 @@ if ($PSCmdlet.ShouldProcess("$engineRes and its .cs file", 'Create resource file
 }
 
 if ($PSCmdlet.ShouldProcess("$rulesRes and its .cs file", 'Create resource files')) {
-   ResGenStr "$RepoDir\Rules\Strings.resx" $rulesRes -confirm:$false
+    ResGenStr "$RepoDir\Rules\Strings.resx" $rulesRes -confirm:$false
 }
 
 
@@ -243,11 +250,11 @@ if ($PSCmdlet.ShouldProcess($engineDll, 'Create File')) {
         /platform:$Platform `
         /warn:$WarnLevel `
         /optimize"$(if ($Optimize) {'+'} else {'-'})" `
-        /r:Microsoft.CSharp.dll `
-        /r:mscorlib.dll `
-        /r:System.dll `
-        /r:System.Core.dll `
-        /r:System.ComponentModel.Composition.dll `
+        /r:"$DotNetDir\Microsoft.CSharp.dll" `
+        /r:"$DotNetDir\mscorlib.dll" `
+        /r:"$DotNetDir\System.dll" `
+        /r:"$DotNetDir\System.Core.dll" `
+        /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
         /r:"$([powershell].assembly.location)" `
         /res:"$engineRes" `
         /recurse:"$RepoDir\Engine\*.cs"
@@ -270,12 +277,12 @@ if ($PSCmdlet.ShouldProcess($rulesDll, 'Create File')) {
         /platform:$Platform `
         /warn:$WarnLevel `
         /optimize"$(if ($Optimize) {'+'} else {'-'})" `
-        /r:Microsoft.CSharp.dll `
-        /r:mscorlib.dll `
-        /r:System.dll `
-        /r:System.Core.dll `
-        /r:System.ComponentModel.Composition.dll `
-        /r:System.Data.Entity.Design.dll `
+        /r:"$DotNetDir\Microsoft.CSharp.dll" `
+        /r:"$DotNetDir\mscorlib.dll" `
+        /r:"$DotNetDir\System.dll" `
+        /r:"$DotNetDir\System.Core.dll" `
+        /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
+        /r:"$DotNetDir\System.Data.Entity.Design.dll" `
         /r:"$([powershell].assembly.location)" `
         /r:"$engineDll" `
         $(if ($NewtonsoftJsonDllPath) {"/r:`"$NewtonsoftJsonDllPath`""}) `
@@ -344,7 +351,7 @@ if ($PSCmdlet.ShouldProcess($testFile, 'Create script that runs tests')) {
     write-verbose "Test Results (Engine) | Passed: `$(`$engineResults.PassedCount), Failed: `$(`$engineResults.FailedCount), Skipped: `$(`$engineResults.SkippedCount)" -verbose
     write-verbose "Test Results (Rules)  | Passed: `$(`$rulesResults.PassedCount), Failed: `$(`$rulesResults.FailedCount), Skipped: `$(`$rulesResults.SkippedCount)" -verbose
 "@ |
-    out-file $testFile -encoding utf8 -force -confirm:$false
+        out-file $testFile -encoding utf8 -force -confirm:$false
 }
 
 if ($PSCmdlet.ShouldProcess($testFile, 'Run script that runs tests')) {
