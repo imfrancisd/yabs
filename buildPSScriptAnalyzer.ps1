@@ -84,8 +84,6 @@ $outputDir = "$RepoDir\out"
 $moduleBaseDir = "$RepoDir\out\PSScriptAnalyzer"
 $modulePSv5Dir = "$RepoDir\out\PSScriptAnalyzer"
 $modulePSv3Dir = "$RepoDir\out\PSScriptAnalyzer\PSv3"
-$engineDir = "$RepoDir\out\tmp\engine"
-$rulesDir = "$RepoDir\out\tmp\rules"
 $nugetDir = "$RepoDir\out\tmp\.nuget"
 $testDir = "$RepoDir\out\tmp\test"
 
@@ -93,29 +91,12 @@ $enginePSv5Dll = "$modulePSv5Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll
 $enginePSv3Dll = "$modulePSv3Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
 $rulesPSv5Dll = "$modulePSv5Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
 $rulesPSv3Dll = "$modulePSv3Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
-$engineRes = "$engineDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.Strings.resources"
-$rulesRes = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources"
 
 $unusedSourceFiles = @(
     "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"
 )
 
 
-
-write-verbose 'Create output directory structure.' -verbose
-
-if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
-    $moduleBaseDir, $modulePSv5Dir, $modulePSv3Dir, $engineDir, $rulesDir, $testDir |
-        where-object {test-path $_} |
-        foreach-object {remove-item $_ -recurse -force -confirm:$false}
-
-    $moduleBaseDir, $modulePSv5Dir, $modulePSv3Dir, $engineDir, $rulesDir, $testdir, $nugetDir |
-        foreach-object {new-item -itemtype directory $_ -force -confirm:$false | out-null}
-}
-
-
-
-write-verbose 'Find external dependencies.' -verbose
 
 function GetNugetResource {
     [cmdletbinding(SupportsShouldProcess)]
@@ -165,6 +146,92 @@ function GetNugetResource {
     $resourcePath
 }
 
+function ConvertResXToResources {
+    [cmdletbinding(SupportsShouldProcess)]
+    param([string]$Path, [string]$Destination)
+
+    add-type -assemblyname system.design
+    add-type -assemblyname system.windows.forms
+
+    $resxIn = [System.IO.Path]::GetFullPath($Path)
+    $resourcesOut = [System.IO.Path]::GetFullPath($Destination)
+
+    if ($PSCmdlet.ShouldProcess($resourcesOut, 'Create File')) {
+        $reader = [System.Resources.ResXResourceReader]::new($resxIn)
+        try {
+            $writer = [System.Resources.ResourceWriter]::new($resourcesOut)
+            try {$reader.GetEnumerator() | foreach-object {$writer.AddResource($_.Key, $_.Value)}}
+            finally {$writer.Close()}
+        }
+        finally {$reader.Close()}
+    }
+
+    if ((-not $WhatIfPreference) -and (-not (test-path $resourcesOut))) {
+        throw "Could not create file: $resourcesOut"
+    }
+
+    $resourcesOut
+}
+
+function ConvertResXToCsharp {
+    [cmdletbinding(SupportsShouldProcess)]
+    param([string]$Path, [string]$Destination, [string]$Namespace, [string]$ClassName)
+
+    add-type -assemblyname system.design
+
+    $resxIn = [System.IO.Path]::GetFullPath($Path)
+    if (-not $PSBoundParameters.ContainsKey('Destination')) {
+        $csharpSrcOut = [System.IO.Path]::ChangeExtension($resxIn, 'Designer.cs')
+    }
+    else {
+        $csharpSrcOut = [System.IO.Path]::GetFullPath($Destination)
+    }
+    if (-not $PSBoundParameters.ContainsKey('ClassName')) {
+        $ClassName = [System.IO.Path]::GetFileNameWithoutExtension($resxIn).Split('.')[-1]
+    }
+    if (-not $PSBoundParameters.ContainsKey('Namespace')) {
+        $Namespace = [System.IO.Path]::GetFileNameWithoutExtension($resxIn) -replace "\.*$classname`$", ''
+    }
+
+    if ($PSCmdlet.ShouldProcess($csharpSrcOut, 'Create File')) {
+        $csProvider = [Microsoft.CSharp.CSharpCodeProvider]::new()
+        try {
+            $resxErrors = $null
+            $compileUnit = [System.Resources.Tools.StronglyTypedResourceBuilder]::Create($resxIn, $ClassName, $Namespace, $csprovider, $true, [ref]$resxErrors)
+            $writer = [System.IO.StreamWriter]::new($csharpSrcOut, $false, [System.Text.UTF8Encoding]::new($true, $true))
+            try {$csProvider.GenerateCodeFromCompileUnit($compileUnit, $writer, [System.CodeDom.Compiler.CodeGeneratorOptions]::new())}
+            finally {$writer.Close()}
+            
+            $srcLines = [System.String[]]@(
+                [System.IO.File]::ReadAllLines($csharpSrcOut) `
+                    -replace '(\s*using\s+System;)\s*', '$1 using System.Reflection;' `
+                    -replace '(typeof\(.+\))\.Assembly', '$1.GetTypeInfo().Assembly'
+            )
+            [System.IO.File]::WriteAllLines($csharpSrcOut, $srcLines, [System.Text.UTF8Encoding]::new($true, $true))
+        }
+        finally {$csProvider.Dispose()}
+    }
+
+    if ((-not $WhatIfPreference) -and (-not (test-path $csharpSrcOut))) {
+        throw "Could not create file: $csharpSrcOut"
+    }
+
+    $csharpSrcOut
+}
+
+
+
+write-verbose 'Create output directory structure.' -verbose
+
+if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
+    $moduleBaseDir, $modulePSv5Dir, $modulePSv3Dir, $testDir |
+        where-object {test-path $_} |
+        foreach-object {remove-item $_ -recurse -force -confirm:$false}
+
+    $moduleBaseDir, $modulePSv5Dir, $modulePSv3Dir, $testdir, $nugetDir |
+        foreach-object {new-item -itemtype directory $_ -force -confirm:$false | out-null}
+}
+
 
 
 write-verbose 'Renaming unused source files.' -verbose
@@ -177,176 +244,114 @@ foreach ($item in $unusedSourceFiles) {
 
 
 
-write-verbose 'Generate resource files.' -verbose
-
-function ResGenStr {
-    [cmdletbinding(SupportsShouldProcess)]
-    param([string]$Path, [string]$Destination, [string]$Namespace, [string]$ClassName)
-
-    add-type -assemblyname system.design
-    add-type -assemblyname system.windows.forms
-
-    $resxIn = [System.IO.Path]::GetFullPath($Path)
-    $resourcesOut = [System.IO.Path]::GetFullPath($Destination)
-    $csharpSrcOut = [System.IO.Path]::ChangeExtension($resxIn, 'Designer.cs')
-    if (-not $PSBoundParameters.ContainsKey('ClassName')) {
-        $ClassName = [System.IO.Path]::GetFileNameWithoutExtension($resourcesOut).Split('.')[-1]
-    }
-    if (-not $PSBoundParameters.ContainsKey('Namespace')) {
-        $Namespace = [System.IO.Path]::GetFileNameWithoutExtension($resourcesOut) -replace "\.*$classname`$", ''
-    }
-
-    if ($PSCmdlet.ShouldProcess($resourcesOut, 'Create File')) {
-        $reader = [System.Resources.ResXResourceReader]::new($resxIn)
-        try {
-            $writer = [System.Resources.ResourceWriter]::new($resourcesOut)
-            try {$reader.GetEnumerator() | foreach-object {$writer.AddResource($_.Key, $_.Value)}}
-            finally {$writer.Close()}
-        }
-        finally {$reader.Close()}
-    }
-    if ($PSCmdlet.ShouldProcess($csharpSrcOut, 'Create File')) {
-        $csProvider = [Microsoft.CSharp.CSharpCodeProvider]::new()
-        try {
-            $resxErrors = $null
-            $compileUnit = [System.Resources.Tools.StronglyTypedResourceBuilder]::Create($resxIn, $ClassName, $Namespace, $csprovider, $true, [ref]$resxErrors)
-            $writer = [System.IO.StreamWriter]::new($csharpSrcOut, $false, [System.Text.UTF8Encoding]::new($true, $true))
-            try {$csProvider.GenerateCodeFromCompileUnit($compileUnit, $writer, [System.CodeDom.Compiler.CodeGeneratorOptions]::new())}
-            finally {$writer.Close()}
-        }
-        finally {$csProvider.Dispose()}
-            
-        $src = [System.String[]]@(
-            [System.IO.File]::ReadAllLines($csharpSrcOut) `
-                -replace '(\s*using\s+System;)\s*', '$1 using System.Reflection;' `
-                -replace '(typeof\(.+\))\.Assembly', '$1.GetTypeInfo().Assembly'
-        )
-        [System.IO.File]::WriteAllLines($csharpSrcOut, $src, [System.Text.UTF8Encoding]::new($true, $true))
-    }
-}
-
-if ($PSCmdlet.ShouldProcess("$engineRes and its .cs file", 'Create resource files')) {
-    ResGenStr "$RepoDir\Engine\Strings.resx" $engineRes -confirm:$false
-}
-
-if ($PSCmdlet.ShouldProcess("$rulesRes and its .cs file", 'Create resource files')) {
-    ResGenStr "$RepoDir\Rules\Strings.resx" $rulesRes -confirm:$false
-}
-
-
-
 write-verbose 'Build PSv5 script analyzer engine.' -verbose
 
-if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create File')) {
-    & $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
-        /nologo /nostdlib /noconfig `
-        /out:"$enginePSv5Dll" `
-        /target:library `
-        /platform:$Platform `
-        /warn:$WarnLevel `
-        /optimize"$(if ($Optimize) {'+'} else {'-'})" `
-        /r:"$DotNetDir\Microsoft.CSharp.dll" `
-        /r:"$DotNetDir\mscorlib.dll" `
-        /r:"$DotNetDir\System.dll" `
-        /r:"$DotNetDir\System.Core.dll" `
-        /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
-        /r:"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
-        /res:"$engineRes" `
-        /recurse:"$RepoDir\Engine\*.cs"
+& $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
+    /nologo /nostdlib /noconfig `
+    /out:"$enginePSv5Dll" `
+    /target:library `
+    /platform:$Platform `
+    /warn:$WarnLevel `
+    /optimize"$(if ($Optimize) {'+'} else {'-'})" `
+    /r:"$DotNetDir\Microsoft.CSharp.dll" `
+    /r:"$DotNetDir\mscorlib.dll" `
+    /r:"$DotNetDir\System.dll" `
+    /r:"$DotNetDir\System.Core.dll" `
+    /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
+    /r:"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
+    /res:"$(ConvertResXToResources "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Microsoft.Windows.PowerShell.ScriptAnalyzer.Strings.resources")" `
+    /recurse:"$RepoDir\Engine\*.cs" `
+    $(ConvertResXToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
 
-    if (-not (test-path $enginePSv5Dll)) {
-        throw "Could not create file: $enginePSv5Dll"
-    }
+if (-not (test-path $enginePSv5Dll)) {
+    throw "Could not create file: $enginePSv5Dll"
 }
 
 
 
 write-verbose 'Build PSv5 script analyzer rules.' -verbose
 
-if ($PSCmdlet.ShouldProcess($rulesPSv5Dll, 'Create File')) {
-    & $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
-        /nologo /nostdlib /noconfig `
-        /out:"$rulesPSv5Dll" `
-        /target:library `
-        /platform:$Platform `
-        /warn:$WarnLevel `
-        /optimize"$(if ($Optimize) {'+'} else {'-'})" `
-        /r:"$DotNetDir\Microsoft.CSharp.dll" `
-        /r:"$DotNetDir\mscorlib.dll" `
-        /r:"$DotNetDir\System.dll" `
-        /r:"$DotNetDir\System.Core.dll" `
-        /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
-        /r:"$DotNetDir\System.Data.Entity.Design.dll" `
-        /r:"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
-        /r:"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)" `
-        /r:"$enginePSv5Dll" `
-        /res:"$rulesRes" `
-        /recurse:"$RepoDir\Rules\*.cs"
+& $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
+    /nologo /nostdlib /noconfig `
+    /out:"$rulesPSv5Dll" `
+    /target:library `
+    /platform:$Platform `
+    /warn:$WarnLevel `
+    /optimize"$(if ($Optimize) {'+'} else {'-'})" `
+    /r:"$enginePSv5Dll" `
+    /r:"$DotNetDir\Microsoft.CSharp.dll" `
+    /r:"$DotNetDir\mscorlib.dll" `
+    /r:"$DotNetDir\System.dll" `
+    /r:"$DotNetDir\System.Core.dll" `
+    /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
+    /r:"$DotNetDir\System.Data.Entity.Design.dll" `
+    /r:"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
+    /r:"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)" `
+    /res:"$(ConvertResXToResources "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources")" `
+    /recurse:"$RepoDir\Rules\*.cs" `
+    $(ConvertResXToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
 
-    copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
+copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
 
-    if (-not (test-path $rulesPSv5Dll)) {
-        throw "Could not create file: $rulesPSv5Dll"
-    }
+if (-not (test-path $rulesPSv5Dll)) {
+    throw "Could not create file: $rulesPSv5Dll"
 }
 
 
 
 write-verbose 'Build PSv3 script analyzer engine.' -verbose
 
-if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create File')) {
-    & $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
-        /nologo /nostdlib /noconfig `
-        /out:"$enginePSv3Dll" `
-        /target:library `
-        /platform:$Platform `
-        /warn:$WarnLevel `
-        /optimize"$(if ($Optimize) {'+'} else {'-'})" `
-        /r:"$DotNetDir\Microsoft.CSharp.dll" `
-        /r:"$DotNetDir\mscorlib.dll" `
-        /r:"$DotNetDir\System.dll" `
-        /r:"$DotNetDir\System.Core.dll" `
-        /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
-        /r:"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
-        /res:"$engineRes" `
-        /define:"PSV3" `
-        /recurse:"$RepoDir\Engine\*.cs"
+& $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
+    /nologo /nostdlib /noconfig `
+    /out:"$enginePSv3Dll" `
+    /target:library `
+    /platform:$Platform `
+    /warn:$WarnLevel `
+    /optimize"$(if ($Optimize) {'+'} else {'-'})" `
+    /r:"$DotNetDir\Microsoft.CSharp.dll" `
+    /r:"$DotNetDir\mscorlib.dll" `
+    /r:"$DotNetDir\System.dll" `
+    /r:"$DotNetDir\System.Core.dll" `
+    /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
+    /r:"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
+    /res:"$(ConvertResXToResources "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Microsoft.Windows.PowerShell.ScriptAnalyzer.Strings.resources")" `
+    /define:"PSV3" `
+    /recurse:"$RepoDir\Engine\*.cs" `
+    $(ConvertResXToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
 
-    if (-not (test-path $enginePSv3Dll)) {
-        throw "Could not create file: $enginePSv3Dll"
-    }
+if (-not (test-path $enginePSv3Dll)) {
+    throw "Could not create file: $enginePSv3Dll"
 }
 
 
 
 write-verbose 'Build PSv3 script analyzer rules.' -verbose
 
-if ($PSCmdlet.ShouldProcess($rulesPSv3Dll, 'Create File')) {
-    & $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
-        /nologo /nostdlib /noconfig `
-        /out:"$rulesPSv3Dll" `
-        /target:library `
-        /platform:$Platform `
-        /warn:$WarnLevel `
-        /optimize"$(if ($Optimize) {'+'} else {'-'})" `
-        /r:"$DotNetDir\Microsoft.CSharp.dll" `
-        /r:"$DotNetDir\mscorlib.dll" `
-        /r:"$DotNetDir\System.dll" `
-        /r:"$DotNetDir\System.Core.dll" `
-        /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
-        /r:"$DotNetDir\System.Data.Entity.Design.dll" `
-        /r:"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
-        /r:"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)" `
-        /r:"$enginePSv3Dll" `
-        /res:"$rulesRes" `
-        /define:"PSV3" `
-        /recurse:"$RepoDir\Rules\*.cs"
+& $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
+    /nologo /nostdlib /noconfig `
+    /out:"$rulesPSv3Dll" `
+    /target:library `
+    /platform:$Platform `
+    /warn:$WarnLevel `
+    /optimize"$(if ($Optimize) {'+'} else {'-'})" `
+    /r:"$enginePSv3Dll" `
+    /r:"$DotNetDir\Microsoft.CSharp.dll" `
+    /r:"$DotNetDir\mscorlib.dll" `
+    /r:"$DotNetDir\System.dll" `
+    /r:"$DotNetDir\System.Core.dll" `
+    /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
+    /r:"$DotNetDir\System.Data.Entity.Design.dll" `
+    /r:"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
+    /r:"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)" `
+    /res:"$(ConvertResXToResources "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources")" `
+    /define:"PSV3" `
+    /recurse:"$RepoDir\Rules\*.cs" `
+    $(ConvertResXToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
 
-    copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv3Dir -confirm:$false
+copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv3Dir -confirm:$false
 
-    if (-not (test-path $rulesPSv3Dll)) {
-        throw "Could not create file: $rulesPSv3Dll"
-    }
+if (-not (test-path $rulesPSv3Dll)) {
+    throw "Could not create file: $rulesPSv3Dll"
 }
 
 
