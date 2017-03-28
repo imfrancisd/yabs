@@ -71,23 +71,7 @@ param(
     #
     #Note:
     #If you do not specify a path, the script will use [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory(), which will have a value similar to "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\".
-    $DotNetDir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory(),
-
-    #Path to the csc.exe file (Roslyn C# compiler).
-    #
-    #Note:
-    #If you do not specify a path, the script will try to find "csc.exe" in $env:Path.
-    #If the script cannot find "csc.exe" in $env:Path, the script will try to download "csc.exe" from the nuget.org package "Microsoft.Net.Compilers".
-    #If the script cannot find "csc.exe" from the nuget.org package "Microsoft.Net.Compilers", the script will try to use "csc.exe" from the path from -DotNetDir parameter.
-    [string]
-    $CscExePath = (get-command -name csc.exe -erroraction silentlycontinue).path,
-
-    #Path to the Newtonsoft.Json.dll file.
-    #
-    #Note:
-    #If you do not specify a path, the script will try to download "Newtonsoft.Json.dll" from the nuget.org package "Newtonsoft.Json".
-    [string]
-    $NewtonsoftJsonDllPath = ""
+    $DotNetDir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
 )
 
 
@@ -181,28 +165,6 @@ function GetNugetResource {
     $resourcePath
 }
 
-if ([string]::IsNullOrWhiteSpace($NewtonsoftJsonDllPath)) {
-    if ($PSCmdlet.ShouldProcess('Newtonsoft.Json', 'Download nuget package.')) {
-        $NewtonsoftJsonDllPath = GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir -confirm:$false
-    }
-    else {
-        #If Newtonsoft.Json is explicitly not downloaded, do not throw here.
-        #Let the compiler throw so that the error will say which file actually needs Newtonsoft.Json.dll.
-        #They can then modify or remove that file if they wish.
-        $NewtonsoftJsonDllPath = ""
-    }
-}
-
-if ([string]::IsNullOrWhiteSpace($CscExePath)) {
-    if ($PSCmdlet.ShouldProcess('Microsoft.Net.Compilers', 'Download nuget package')) {
-        try {$CscExePath = GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir -confirm:$false}
-        catch {$CscExePath = join-path $DotNetDir 'csc.exe'}
-    }
-    else {
-        $CscExePath = join-path $DotNetDir 'csc.exe'
-    }
-}
-
 
 
 write-verbose 'Renaming unused source files.' -verbose
@@ -276,8 +238,7 @@ if ($PSCmdlet.ShouldProcess("$rulesRes and its .cs file", 'Create resource files
 write-verbose 'Build PSv5 script analyzer engine.' -verbose
 
 if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create File')) {
-    write-verbose "csc.exe: $CscExePath" -verbose
-    & $CscExePath `
+    & $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
         /nologo /nostdlib /noconfig `
         /out:"$enginePSv5Dll" `
         /target:library `
@@ -303,8 +264,7 @@ if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create File')) {
 write-verbose 'Build PSv5 script analyzer rules.' -verbose
 
 if ($PSCmdlet.ShouldProcess($rulesPSv5Dll, 'Create File')) {
-    write-verbose "csc.exe: $CscExePath" -verbose
-    & $CscExePath `
+    & $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
         /nologo /nostdlib /noconfig `
         /out:"$rulesPSv5Dll" `
         /target:library `
@@ -319,9 +279,11 @@ if ($PSCmdlet.ShouldProcess($rulesPSv5Dll, 'Create File')) {
         /r:"$DotNetDir\System.Data.Entity.Design.dll" `
         /r:"$([powershell].assembly.location)" `
         /r:"$enginePSv5Dll" `
-        $(if ($NewtonsoftJsonDllPath) {"/r:`"$NewtonsoftJsonDllPath`""}) `
+        /r:"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)" `
         /res:"$rulesRes" `
         /recurse:"$RepoDir\Rules\*.cs"
+
+    copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
 
     if (-not (test-path $rulesPSv5Dll)) {
         throw "Could not create file: $rulesPSv5Dll"
@@ -333,8 +295,7 @@ if ($PSCmdlet.ShouldProcess($rulesPSv5Dll, 'Create File')) {
 write-verbose 'Build PSv3 script analyzer engine.' -verbose
 
 if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create File')) {
-    write-verbose "csc.exe: $CscExePath" -verbose
-    & $CscExePath `
+    & $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
         /nologo /nostdlib /noconfig `
         /out:"$enginePSv3Dll" `
         /target:library `
@@ -361,8 +322,7 @@ if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create File')) {
 write-verbose 'Build PSv3 script analyzer rules.' -verbose
 
 if ($PSCmdlet.ShouldProcess($rulesPSv3Dll, 'Create File')) {
-    write-verbose "csc.exe: $CscExePath" -verbose
-    & $CscExePath `
+    & $(GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir) `
         /nologo /nostdlib /noconfig `
         /out:"$rulesPSv3Dll" `
         /target:library `
@@ -377,10 +337,12 @@ if ($PSCmdlet.ShouldProcess($rulesPSv3Dll, 'Create File')) {
         /r:"$DotNetDir\System.Data.Entity.Design.dll" `
         /r:"$([powershell].assembly.location)" `
         /r:"$enginePSv3Dll" `
-        $(if ($NewtonsoftJsonDllPath) {"/r:`"$NewtonsoftJsonDllPath`""}) `
+        /r:"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)" `
         /res:"$rulesRes" `
         /define:"PSV3" `
         /recurse:"$RepoDir\Rules\*.cs"
+
+    copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv3Dir -confirm:$false
 
     if (-not (test-path $rulesPSv3Dll)) {
         throw "Could not create file: $rulesPSv3Dll"
@@ -390,11 +352,6 @@ if ($PSCmdlet.ShouldProcess($rulesPSv3Dll, 'Create File')) {
 
 
 write-verbose 'Create PSScriptAnalyzer Module.' -verbose
-
-if (-not [string]::IsNullOrWhiteSpace($NewtonsoftJsonDllPath) -and $PSCmdlet.ShouldProcess($NewtonsoftJsonDllPath, 'Copy dll')) {
-    copy-item $NewtonsoftJsonDllPath $modulePSv5Dir -confirm:$false
-    copy-item $NewtonsoftJsonDllPath $modulePSv3Dir -confirm:$false
-}
 
 if ($PSCmdlet.ShouldProcess("$RepoDir\Engine", 'Copy psd1, psm1, ps1xml, and settings files')) {
     copy-item "$RepoDir\Engine\PSScriptAnalyzer.ps[dm]1" $moduleBaseDir -confirm:$false
