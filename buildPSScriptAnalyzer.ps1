@@ -244,11 +244,18 @@ function ResGenStr {
         try {
             $resxErrors = $null
             $compileUnit = [System.Resources.Tools.StronglyTypedResourceBuilder]::Create($resxIn, $ClassName, $Namespace, $csprovider, $true, [ref]$resxErrors)
-            $writer = [System.IO.StreamWriter]::new($csharpSrcOut)
+            $writer = [System.IO.StreamWriter]::new($csharpSrcOut, $false, [System.Text.UTF8Encoding]::new($true, $true))
             try {$csProvider.GenerateCodeFromCompileUnit($compileUnit, $writer, [System.CodeDom.Compiler.CodeGeneratorOptions]::new())}
             finally {$writer.Close()}
         }
         finally {$csProvider.Dispose()}
+            
+        $src = [System.String[]]@(
+            [System.IO.File]::ReadAllLines($csharpSrcOut) `
+                -replace '(\s*using\s+System;)\s*', '$1 using System.Reflection;' `
+                -replace '(typeof\(.+\))\.Assembly', '$1.GetTypeInfo().Assembly'
+        )
+        [System.IO.File]::WriteAllLines($csharpSrcOut, $src, [System.Text.UTF8Encoding]::new($true, $true))
     }
 }
 
