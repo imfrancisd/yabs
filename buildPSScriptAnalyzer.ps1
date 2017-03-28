@@ -100,7 +100,7 @@ $outputDir = "$RepoDir\out"
 $moduleDir = "$RepoDir\out\PSScriptAnalyzer"
 $engineDir = "$RepoDir\out\tmp\engine"
 $rulesDir = "$RepoDir\out\tmp\rules"
-$nugetDir = "$RepoDir\out\tmp\nuget"
+$nugetDir = "$RepoDir\out\tmp\.nuget"
 $testDir = "$RepoDir\out\tmp\test"
 
 $engineDll = "$moduleDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
@@ -131,15 +131,38 @@ write-verbose 'Find external dependencies.' -verbose
 
 function GetNugetResource {
     [cmdletbinding(SupportsShouldProcess)]
-    param([string]$NugetDir, [string]$PackageName, [string]$PackageVersion, [string]$RelativePath)
+    param(
+        [parameter(Mandatory = $true, Position = 0)]
+        [System.String]
+        $PackageName,
+        
+        [parameter(Mandatory = $true, Position = 1)]
+        [System.String]
+        $PackageVersion,
+        
+        [parameter(Mandatory = $true, Position = 2)]
+        [System.String]
+        $RelativePath,
+        
+        [parameter(Mandatory = $true)]
+        [System.String]
+        $NugetDir,
+        
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $NugetUrl = 'https://www.nuget.org/api/v2'
+    )
 
-    $NugetDir = $NugetDir -replace '[\\/]$', ''
-    $packageUrl = "https://www.nuget.org/api/v2/package/$PackageName/$PackageVersion"
-    $packageDir = join-path $NugetDir "$PackageName$(if ($PackageVersion) {".$PackageVersion"} else {''})"
-    $packageZip = "$packageDir.zip"
-    $resourcePath = join-path $packageDir $RelativePath
+    $NugetDir = (get-item $NugetDir).fullname -replace '[\\/]$', ''
+    $NugetUrl = $NugetUrl -replace '[/]$', ''
+
+    $packageUrl = "$NugetUrl/package/$PackageName/$PackageVersion"
+    $packageDir = [System.IO.Path]::Combine($NugetDir, 'packages', $PackageName, $PackageVersion)
+    $packageZip = [System.IO.Path]::Combine($NugetDir, 'packages', $PackageName, "$PackageVersion.zip")
+    $resourcePath = [System.IO.Path]::Combine($packageDir, $RelativePath)
 
     if ((-not (test-path $resourcePath)) -and $PSCmdlet.ShouldProcess($packageUrl, 'Download nuget package')) {
+        mkdir $packageDir -force -confirm:$false | out-null
         invoke-webrequest $packageUrl -outfile $packageZip -verbose
         if (test-path $packageZip) {
             expand-archive $packageZip -destinationpath $packageDir -force
@@ -147,7 +170,7 @@ function GetNugetResource {
         }
     }
 
-    if (-not (test-path $resourcePath)) {
+    if ((-not $WhatIfPreference) -and (-not (test-path $resourcePath))) {
         throw "Could not find nuget resource: $resourcePath"
     }
 
@@ -156,7 +179,7 @@ function GetNugetResource {
 
 if ([string]::IsNullOrWhiteSpace($NewtonsoftJsonDllPath)) {
     if ($PSCmdlet.ShouldProcess('Newtonsoft.Json', 'Download nuget package.')) {
-        $NewtonsoftJsonDllPath = GetNugetResource $nugetDir 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -confirm:$false
+        $NewtonsoftJsonDllPath = GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir -confirm:$false
     }
     else {
         #If Newtonsoft.Json is explicitly not downloaded, do not throw here.
@@ -168,7 +191,7 @@ if ([string]::IsNullOrWhiteSpace($NewtonsoftJsonDllPath)) {
 
 if ([string]::IsNullOrWhiteSpace($CscExePath)) {
     if ($PSCmdlet.ShouldProcess('Microsoft.Net.Compilers', 'Download nuget package')) {
-        try {$CscExePath = GetNugetResource $nugetDir 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -confirm:$false}
+        try {$CscExePath = GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir -confirm:$false}
         catch {$CscExePath = join-path $DotNetDir 'csc.exe'}
     }
     else {
