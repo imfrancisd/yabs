@@ -92,10 +92,6 @@ $enginePSv3Dll = "$modulePSv3Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll
 $rulesPSv5Dll = "$modulePSv5Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
 $rulesPSv3Dll = "$modulePSv3Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
 
-$unusedSourceFiles = @(
-    "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"
-)
-
 
 
 function GetNugetResource {
@@ -234,13 +230,27 @@ if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
 
 
 
-write-verbose 'Renaming unused source files.' -verbose
+write-verbose 'Fix source files.' -verbose
 
-foreach ($item in $unusedSourceFiles) {
-    if ((test-path $item) -and $PSCmdlet.ShouldProcess($item, 'Add ".unused" extension')) {
-        move-item $item "$item.unused" -confirm:$false -force
+"$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs" |
+    where-object {test-path $_} |
+    foreach-object {
+        $(& {
+            '#if EXCLUDED_CS'
+            [system.io.file]::ReadAllLines($_)
+            '#endif'
+        }) | out-file $_ -encoding utf8 -force
     }
-}
+
+"$RepoDir\Engine\SafeDirectoryCatalog.cs", "$RepoDir\Rules\UseSingularNouns.cs" |
+    where-object {(test-path $_)} |
+    foreach-object {
+        $(& {
+            '#if !CORECLR'
+            [system.io.file]::ReadAllLines($_)
+            '#endif'
+        }) | out-file $_ -encoding utf8 -force
+    }
 
 
 
