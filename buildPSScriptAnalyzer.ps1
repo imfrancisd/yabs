@@ -250,7 +250,7 @@ if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create File')) {
         /r:"$DotNetDir\System.dll" `
         /r:"$DotNetDir\System.Core.dll" `
         /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
-        /r:"$([powershell].assembly.location)" `
+        /r:"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
         /res:"$engineRes" `
         /recurse:"$RepoDir\Engine\*.cs"
 
@@ -277,9 +277,9 @@ if ($PSCmdlet.ShouldProcess($rulesPSv5Dll, 'Create File')) {
         /r:"$DotNetDir\System.Core.dll" `
         /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
         /r:"$DotNetDir\System.Data.Entity.Design.dll" `
-        /r:"$([powershell].assembly.location)" `
-        /r:"$enginePSv5Dll" `
+        /r:"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
         /r:"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)" `
+        /r:"$enginePSv5Dll" `
         /res:"$rulesRes" `
         /recurse:"$RepoDir\Rules\*.cs"
 
@@ -307,7 +307,7 @@ if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create File')) {
         /r:"$DotNetDir\System.dll" `
         /r:"$DotNetDir\System.Core.dll" `
         /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
-        /r:"$([powershell].assembly.location)" `
+        /r:"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
         /res:"$engineRes" `
         /define:"PSV3" `
         /recurse:"$RepoDir\Engine\*.cs"
@@ -335,9 +335,9 @@ if ($PSCmdlet.ShouldProcess($rulesPSv3Dll, 'Create File')) {
         /r:"$DotNetDir\System.Core.dll" `
         /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
         /r:"$DotNetDir\System.Data.Entity.Design.dll" `
-        /r:"$([powershell].assembly.location)" `
-        /r:"$enginePSv3Dll" `
+        /r:"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)" `
         /r:"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)" `
+        /r:"$enginePSv3Dll" `
         /res:"$rulesRes" `
         /define:"PSV3" `
         /recurse:"$RepoDir\Rules\*.cs"
