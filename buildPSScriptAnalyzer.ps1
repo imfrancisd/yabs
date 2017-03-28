@@ -97,15 +97,19 @@ $ErrorActionPreference = 'Stop'
 $RepoDir = (get-item $RepoDir).FullName -replace '[\\/]$', ''
 $DotNetDir = (get-item $DotNetDir).FullName -replace '[\\/]$', ''
 $outputDir = "$RepoDir\out"
-$moduleDir = "$RepoDir\out\PSScriptAnalyzer"
+$moduleBaseDir = "$RepoDir\out\PSScriptAnalyzer"
+$modulePSv5Dir = "$RepoDir\out\PSScriptAnalyzer"
+$modulePSv3Dir = "$RepoDir\out\PSScriptAnalyzer\PSv3"
 $engineDir = "$RepoDir\out\tmp\engine"
 $rulesDir = "$RepoDir\out\tmp\rules"
 $nugetDir = "$RepoDir\out\tmp\.nuget"
 $testDir = "$RepoDir\out\tmp\test"
 
-$engineDll = "$moduleDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
+$enginePSv5Dll = "$modulePSv5Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
+$enginePSv3Dll = "$modulePSv3Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
+$rulesPSv5Dll = "$modulePSv5Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
+$rulesPSv3Dll = "$modulePSv3Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
 $engineRes = "$engineDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.Strings.resources"
-$rulesDll = "$moduleDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
 $rulesRes = "$rulesDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources"
 
 $unusedSourceFiles = @(
@@ -117,11 +121,11 @@ $unusedSourceFiles = @(
 write-verbose 'Create output directory structure.' -verbose
 
 if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
-    $moduleDir, $engineDir, $rulesDir, $testDir |
+    $moduleBaseDir, $modulePSv5Dir, $modulePSv3Dir, $engineDir, $rulesDir, $testDir |
         where-object {test-path $_} |
         foreach-object {remove-item $_ -recurse -force -confirm:$false}
 
-    $moduleDir, $engineDir, $rulesDir, $testdir, $nugetDir |
+    $moduleBaseDir, $modulePSv5Dir, $modulePSv3Dir, $engineDir, $rulesDir, $testdir, $nugetDir |
         foreach-object {new-item -itemtype directory $_ -force -confirm:$false | out-null}
 }
 
@@ -269,13 +273,13 @@ if ($PSCmdlet.ShouldProcess("$rulesRes and its .cs file", 'Create resource files
 
 
 
-write-verbose 'Build script analyzer engine.' -verbose
+write-verbose 'Build PSv5 script analyzer engine.' -verbose
 
-if ($PSCmdlet.ShouldProcess($engineDll, 'Create File')) {
+if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create File')) {
     write-verbose "csc.exe: $CscExePath" -verbose
     & $CscExePath `
         /nologo /nostdlib /noconfig `
-        /out:"$engineDll" `
+        /out:"$enginePSv5Dll" `
         /target:library `
         /platform:$Platform `
         /warn:$WarnLevel `
@@ -289,20 +293,20 @@ if ($PSCmdlet.ShouldProcess($engineDll, 'Create File')) {
         /res:"$engineRes" `
         /recurse:"$RepoDir\Engine\*.cs"
 
-    if (-not (test-path $engineDll)) {
-        throw "Could not create file: $engineDll"
+    if (-not (test-path $enginePSv5Dll)) {
+        throw "Could not create file: $enginePSv5Dll"
     }
 }
 
 
 
-write-verbose 'Build script analyzer rules.' -verbose
+write-verbose 'Build PSv5 script analyzer rules.' -verbose
 
-if ($PSCmdlet.ShouldProcess($rulesDll, 'Create File')) {
+if ($PSCmdlet.ShouldProcess($rulesPSv5Dll, 'Create File')) {
     write-verbose "csc.exe: $CscExePath" -verbose
     & $CscExePath `
         /nologo /nostdlib /noconfig `
-        /out:"$rulesDll" `
+        /out:"$rulesPSv5Dll" `
         /target:library `
         /platform:$Platform `
         /warn:$WarnLevel `
@@ -314,13 +318,72 @@ if ($PSCmdlet.ShouldProcess($rulesDll, 'Create File')) {
         /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
         /r:"$DotNetDir\System.Data.Entity.Design.dll" `
         /r:"$([powershell].assembly.location)" `
-        /r:"$engineDll" `
+        /r:"$enginePSv5Dll" `
         $(if ($NewtonsoftJsonDllPath) {"/r:`"$NewtonsoftJsonDllPath`""}) `
         /res:"$rulesRes" `
         /recurse:"$RepoDir\Rules\*.cs"
 
-    if (-not (test-path $rulesDll)) {
-        throw "Could not create file: $rulesDll"
+    if (-not (test-path $rulesPSv5Dll)) {
+        throw "Could not create file: $rulesPSv5Dll"
+    }
+}
+
+
+
+write-verbose 'Build PSv3 script analyzer engine.' -verbose
+
+if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create File')) {
+    write-verbose "csc.exe: $CscExePath" -verbose
+    & $CscExePath `
+        /nologo /nostdlib /noconfig `
+        /out:"$enginePSv3Dll" `
+        /target:library `
+        /platform:$Platform `
+        /warn:$WarnLevel `
+        /optimize"$(if ($Optimize) {'+'} else {'-'})" `
+        /r:"$DotNetDir\Microsoft.CSharp.dll" `
+        /r:"$DotNetDir\mscorlib.dll" `
+        /r:"$DotNetDir\System.dll" `
+        /r:"$DotNetDir\System.Core.dll" `
+        /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
+        /r:"$([powershell].assembly.location)" `
+        /res:"$engineRes" `
+        /define:"PSV3" `
+        /recurse:"$RepoDir\Engine\*.cs"
+
+    if (-not (test-path $enginePSv3Dll)) {
+        throw "Could not create file: $enginePSv3Dll"
+    }
+}
+
+
+
+write-verbose 'Build PSv3 script analyzer rules.' -verbose
+
+if ($PSCmdlet.ShouldProcess($rulesPSv3Dll, 'Create File')) {
+    write-verbose "csc.exe: $CscExePath" -verbose
+    & $CscExePath `
+        /nologo /nostdlib /noconfig `
+        /out:"$rulesPSv3Dll" `
+        /target:library `
+        /platform:$Platform `
+        /warn:$WarnLevel `
+        /optimize"$(if ($Optimize) {'+'} else {'-'})" `
+        /r:"$DotNetDir\Microsoft.CSharp.dll" `
+        /r:"$DotNetDir\mscorlib.dll" `
+        /r:"$DotNetDir\System.dll" `
+        /r:"$DotNetDir\System.Core.dll" `
+        /r:"$DotNetDir\System.ComponentModel.Composition.dll" `
+        /r:"$DotNetDir\System.Data.Entity.Design.dll" `
+        /r:"$([powershell].assembly.location)" `
+        /r:"$enginePSv3Dll" `
+        $(if ($NewtonsoftJsonDllPath) {"/r:`"$NewtonsoftJsonDllPath`""}) `
+        /res:"$rulesRes" `
+        /define:"PSV3" `
+        /recurse:"$RepoDir\Rules\*.cs"
+
+    if (-not (test-path $rulesPSv3Dll)) {
+        throw "Could not create file: $rulesPSv3Dll"
     }
 }
 
@@ -329,20 +392,21 @@ if ($PSCmdlet.ShouldProcess($rulesDll, 'Create File')) {
 write-verbose 'Create PSScriptAnalyzer Module.' -verbose
 
 if (-not [string]::IsNullOrWhiteSpace($NewtonsoftJsonDllPath) -and $PSCmdlet.ShouldProcess($NewtonsoftJsonDllPath, 'Copy dll')) {
-    copy-item $NewtonsoftJsonDllPath $moduleDir -confirm:$false
+    copy-item $NewtonsoftJsonDllPath $modulePSv5Dir -confirm:$false
+    copy-item $NewtonsoftJsonDllPath $modulePSv3Dir -confirm:$false
 }
 
 if ($PSCmdlet.ShouldProcess("$RepoDir\Engine", 'Copy psd1, psm1, ps1xml, and settings files')) {
-    copy-item "$RepoDir\Engine\PSScriptAnalyzer.ps[dm]1" $moduleDir -confirm:$false
-    copy-item "$RepoDir\Engine\ScriptAnalyzer.*.ps1xml" $moduleDir -confirm:$false
-    copy-item "$RepoDir\Engine\Settings" -recurse $moduleDir -confirm:$false
+    copy-item "$RepoDir\Engine\PSScriptAnalyzer.ps[dm]1" $moduleBaseDir -confirm:$false
+    copy-item "$RepoDir\Engine\ScriptAnalyzer.*.ps1xml" $moduleBaseDir -confirm:$false
+    copy-item "$RepoDir\Engine\Settings" -recurse $moduleBaseDir -confirm:$false
 }
 
 
 
 write-verbose 'Generate PSScriptAnalyzer Module help files.' -verbose
 
-$helpDir = "$moduleDir\en-US"
+$helpDir = "$moduleBaseDir\en-US"
 if ($PSCmdlet.ShouldProcess($helpDir, 'Create PSScriptAnalyzer Module Help Directory')) {
     new-item -itemtype directory $helpDir -confirm:$false | out-null
     copy-item "$RepoDir\docs\about*.txt" $helpDir -confirm:$false
@@ -369,7 +433,7 @@ if ($PSCmdlet.ShouldProcess($testFile, 'Create script that runs tests')) {
     #We can either install PSScriptAnalyzer in `$env:PSModulePath, or
     #we can temporarily change `$env:PSModulePath.
 
-    import-module '$moduleDir'
+    import-module '$moduleBaseDir'
     `$env:PSModulePath = "$outputDir;`$(`$env:PSModulePath)"
 
     set-location '$RepoDir\Tests\Engine'
@@ -395,6 +459,6 @@ if ($PSCmdlet.ShouldProcess($testFile, 'Run script that runs tests')) {
 
 
 
-if ((-not $WhatIfPreference) -and (test-path "$moduleDir\*.psd1")) {
-    get-item "$moduleDir\*.psd1"
+if ((-not $WhatIfPreference) -and (test-path "$moduleBaseDir\*.psd1")) {
+    get-item "$moduleBaseDir\*.psd1"
 }
