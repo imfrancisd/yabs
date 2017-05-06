@@ -58,8 +58,8 @@ param(
 
 
 
-if ('Desktop' -ne $PSVersionTable.PSEdition) {
-    throw "Cannot run build script on .NET core."
+if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {
+    throw "Must run build script on a Desktop edition of PowerShell."
 }
 
 
