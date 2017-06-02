@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2017-05-05
+Updated 2017-06-02
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -110,7 +110,7 @@ function GetNugetResource {
         $NugetUrl = 'https://www.nuget.org/api/v2'
     )
 
-    $NugetDir = (get-item $NugetDir).fullname -replace '[\\/]$', ''
+    $NugetDir = $NugetDir -replace '[\\/]$', ''
     $NugetUrl = $NugetUrl -replace '[/]$', ''
 
     $packageUrl = "$NugetUrl/package/$PackageName/$PackageVersion"
@@ -223,8 +223,6 @@ if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
     copy-item "$RepoDir\Engine\ScriptAnalyzer.*.ps1xml" $moduleBaseDir -confirm:$false
     copy-item "$RepoDir\Engine\Settings" -recurse $moduleBaseDir -confirm:$false
     copy-item "$RepoDir\docs\about*.txt" $helpDir -confirm:$false
-    copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
-    copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv3Dir -confirm:$false
 }
 
 
@@ -299,6 +297,8 @@ if ($pscmdlet.ShouldProcess($rulesPSv5Dll, 'Create file')) {
     if (-not (test-path $rulesPSv5Dll)) {
         throw "Could not create file: $rulesPSv5Dll"
     }
+
+    copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
 }
 
 
@@ -375,6 +375,8 @@ if ($pscmdlet.ShouldProcess($rulesPSv3Dll, 'Create file')) {
     if (-not (test-path $rulesPSv3Dll)) {
         throw "Could not create file: $rulesPSv3Dll"
     }
+
+    copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv3Dir -confirm:$false
 }
 
 
