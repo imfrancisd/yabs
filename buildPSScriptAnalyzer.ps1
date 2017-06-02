@@ -231,7 +231,7 @@ if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
 
 write-verbose 'Build PSv5 script analyzer engine.' -verbose
 
-$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.1.0' 'tools\csc.exe' -nugetDir $nugetDir
+$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
 $compilerArgs = & {
     '/nologo'
     '/nostdlib'
@@ -267,7 +267,7 @@ if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create file')) {
 
 write-verbose 'Build PSv5 script analyzer rules.' -verbose
 
-$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.1.0' 'tools\csc.exe' -nugetDir $nugetDir
+$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
 $compilerArgs = & {
     '/nologo'
     '/nostdlib'
@@ -305,7 +305,7 @@ if ($pscmdlet.ShouldProcess($rulesPSv5Dll, 'Create file')) {
 
 write-verbose 'Build PSv3 script analyzer engine.' -verbose
 
-$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.1.0' 'tools\csc.exe' -nugetDir $nugetDir
+$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
 $compilerArgs = & {
     '/nologo'
     '/nostdlib'
@@ -342,7 +342,7 @@ if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create file')) {
 
 write-verbose 'Build PSv3 script analyzer rules.' -verbose
 
-$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.1.0' 'tools\csc.exe' -nugetDir $nugetDir
+$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
 $compilerArgs = & {
     '/nologo'
     '/nostdlib'
@@ -381,7 +381,7 @@ if ($pscmdlet.ShouldProcess($rulesPSv3Dll, 'Create file')) {
 
 write-verbose 'Build PSCore script analyzer engine.' -verbose
 
-$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.1.0' 'tools\csc.exe' -nugetDir $nugetDir
+$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
 $compilerArgs = & {
     '/nologo'
     '/nostdlib'
@@ -437,7 +437,7 @@ if ($PSCmdlet.ShouldProcess($engineCoreDll, 'Create file')) {
 
 write-verbose 'Build PSCore script analyzer rules.' -verbose
 
-$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.1.0' 'tools\csc.exe' -nugetDir $nugetDir
+$compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
 $compilerArgs = & {
     '/nologo'
     '/nostdlib'
