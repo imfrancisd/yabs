@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2017-06-02
+Updated 2017-06-03
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -134,77 +134,118 @@ function GetNugetResource {
     $resourcePath
 }
 
-function ConvertResXToResources {
+function ConvertResxStringsToCsharp {
     [cmdletbinding(SupportsShouldProcess)]
-    param([string]$Path, [string]$Destination)
+    param(
+        #String ('strings.resx') or
+        #Hashtable (@{''='default.resx'; 'en'='enDefault.resx; 'en-us'='baseball.resx'; 'en-ca'='hockey.resx';})
+        [parameter(Mandatory, Position = 0)]
+        [object]
+        $Path,
 
-    add-type -assemblyname system.design
-    add-type -assemblyname system.windows.forms
+        #String ('strings.designer.cs')
+        [parameter(Mandatory, Position = 1)]
+        [string]
+        $Destination,
 
-    $resxIn = [System.IO.Path]::GetFullPath($Path)
-    $resourcesOut = [System.IO.Path]::GetFullPath($Destination)
+        [parameter(Mandatory, Position = 2)]
+        [string]
+        $Namespace,
 
-    if ($PSCmdlet.ShouldProcess($resourcesOut, 'Create File')) {
-        $reader = [System.Resources.ResXResourceReader]::new($resxIn)
-        try {
-            $writer = [System.Resources.ResourceWriter]::new($resourcesOut)
-            try {$reader.GetEnumerator() | foreach-object {$writer.AddResource($_.Key, $_.Value)}}
-            finally {$writer.Close()}
+        [parameter(Mandatory, Position = 3)]
+        [string]
+        $ClassName
+    )
+
+    if ($PSCmdlet.ShouldProcess($Destination, 'Create File')) {
+        if (($Path -is [System.String]) -or ($Path -is [System.IO.FileInfo])) {
+            $Path = @{'' = $Path}
         }
-        finally {$reader.Close()}
-    }
-
-    if ((-not $WhatIfPreference) -and (-not (test-path $resourcesOut))) {
-        throw "Could not create file: $resourcesOut"
-    }
-
-    $resourcesOut
-}
-
-function ConvertResXToCsharp {
-    [cmdletbinding(SupportsShouldProcess)]
-    param([string]$Path, [string]$Destination, [string]$Namespace, [string]$ClassName)
-
-    add-type -assemblyname system.design
-
-    $resxIn = [System.IO.Path]::GetFullPath($Path)
-    if (-not $PSBoundParameters.ContainsKey('Destination')) {
-        $csharpSrcOut = [System.IO.Path]::ChangeExtension($resxIn, 'Designer.cs')
-    }
-    else {
-        $csharpSrcOut = [System.IO.Path]::GetFullPath($Destination)
-    }
-    if (-not $PSBoundParameters.ContainsKey('ClassName')) {
-        $ClassName = [System.IO.Path]::GetFileNameWithoutExtension($resxIn).Split('.')[-1]
-    }
-    if (-not $PSBoundParameters.ContainsKey('Namespace')) {
-        $Namespace = [System.IO.Path]::GetFileNameWithoutExtension($resxIn) -replace "\.*$classname`$", ''
-    }
-
-    if ($PSCmdlet.ShouldProcess($csharpSrcOut, 'Create File')) {
-        $csProvider = [Microsoft.CSharp.CSharpCodeProvider]::new()
-        try {
-            $resxErrors = $null
-            $compileUnit = [System.Resources.Tools.StronglyTypedResourceBuilder]::Create($resxIn, $ClassName, $Namespace, $csprovider, $true, [ref]$resxErrors)
-            $writer = [System.IO.StreamWriter]::new($csharpSrcOut, $false, [System.Text.UTF8Encoding]::new($true, $true))
-            try {$csProvider.GenerateCodeFromCompileUnit($compileUnit, $writer, [System.CodeDom.Compiler.CodeGeneratorOptions]::new())}
-            finally {$writer.Close()}
-            
-            $srcLines = [System.String[]]@(
-                [System.IO.File]::ReadAllLines($csharpSrcOut) `
-                    -replace '(\s*using\s+System;)\s*', '$1 using System.Reflection;' `
-                    -replace '(typeof\(.+\))\.Assembly', '$1.GetTypeInfo().Assembly'
-            )
-            [System.IO.File]::WriteAllLines($csharpSrcOut, $srcLines, [System.Text.UTF8Encoding]::new($true, $true))
+        elseif ($Path -isnot [System.Collections.IDictionary]) {
+            throw "Path must be a file path or a hashtable."
         }
-        finally {$csProvider.Dispose()}
+
+        &{
+            "using System;"
+            "using System.Collections.Generic;"
+            "using System.Globalization;"
+            ""
+            "namespace $Namespace"
+            "{"
+            "    internal static class $ClassName"
+            "    {"
+            "        private static CultureInfo _culture;"
+            ""
+            "        private static Dictionary<CultureInfo, Dictionary<string, string>> _localizedResources;"
+            ""
+            "        private static string GetString(string name, CultureInfo culture)"
+            "        {"
+            "            while (culture != CultureInfo.InvariantCulture)"
+            "            {"
+            "                if (_localizedResources.ContainsKey(culture) && _localizedResources[culture].ContainsKey(name))"
+            "                {"
+            "                    break;"
+            "                }"
+            "                culture = culture.Parent;"
+            "            }"
+            ""
+            "            return _localizedResources[culture][name];"
+            "        }"
+            ""
+            "        internal static CultureInfo Culture"
+            "        {"
+            "            get {return _culture;}"
+            "            set {_culture = value ?? CultureInfo.InvariantCulture;}"
+            "        }"
+            ""
+
+            $resourceContents = [System.Collections.Generic.Dictionary[System.Globalization.CultureInfo, System.Collections.Hashtable]]::new()
+
+            foreach ($entry in $Path.GetEnumerator()) {
+                $culture = [System.Globalization.CultureInfo]::new("$($entry.Key)")
+                $xmlData = [xml](get-content $entry.Value)
+                $resourceContents.Add($culture, @{})
+
+                foreach ($item in $xmlData.GetElementsByTagName('data').GetEnumerator()) {
+                    $resourceContents[$culture][$item.name] = $item.value.Replace("\", "\\").Replace('"', '\"').Replace("`r", "\r").Replace("`n", "\n").Replace("`t", "\t")
+                }
+            }
+
+            $resourceContents.GetEnumerator() |
+                foreach-object {$_.Value.GetEnumerator()} |
+                sort-object {$_.Key} -unique |
+                foreach-object {"        internal static string $($_.Key) {get {return GetString(`"$($_.Key)`", Culture);}}", ""}
+
+            "        static $($ClassName)()"
+            "        {"
+            "            Culture = CultureInfo.CurrentUICulture;"
+            ""
+            "            _localizedResources = new Dictionary<CultureInfo, Dictionary<string, string>>()"
+            "            {"
+
+            $resourceContents.GetEnumerator() |
+                sort-object {$_.Key} |
+                foreach-object {
+                    "                [new CultureInfo(`"$($_.Key)`")] = new Dictionary<string, string>()"
+                    "                {"
+                    $_.Value.GetEnumerator() |
+                        sort-object {$_.Key} |
+                        foreach-object {"                    [`"$($_.Key)`"] = `"$($_.Value)`","}
+                    "                },"
+                }
+
+            "            };"
+            "        }"
+            "    }"
+            "}"
+        } | out-file $Destination -encoding utf8 -force
     }
 
-    if ((-not $WhatIfPreference) -and (-not (test-path $csharpSrcOut))) {
-        throw "Could not create file: $csharpSrcOut"
+    if ((-not $WhatIfPreference) -and (-not (test-path $Destination))) {
+        throw "Could not create file: $Destination"
     }
 
-    $csharpSrcOut
+    $Destination
 }
 
 
@@ -245,12 +286,11 @@ $compilerArgs = & {
     "/r:`"$DotNetDir\System.Core.dll`""
     "/r:`"$DotNetDir\System.ComponentModel.Composition.dll`""
     "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-    "/res:`"$(ConvertResXToResources "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Microsoft.Windows.PowerShell.ScriptAnalyzer.Strings.resources")`""
     dir "$RepoDir\Engine" -filter *.cs -recurse |
         select-object -expandproperty fullname |
         where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
         where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
-    $(ConvertResXToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
+    $(ConvertResxStringsToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
 }
 
 if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create file')) {
@@ -284,11 +324,10 @@ $compilerArgs = & {
     "/r:`"$DotNetDir\System.Data.Entity.Design.dll`""
     "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
     "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
-    "/res:`"$(ConvertResXToResources "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources")`""
     dir "$RepoDir\Rules" -filter *.cs -recurse |
         select-object -expandproperty fullname |
         where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
-    $(ConvertResXToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
+    $(ConvertResxStringsToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
 }
 
 if ($pscmdlet.ShouldProcess($rulesPSv5Dll, 'Create file')) {
@@ -321,13 +360,12 @@ $compilerArgs = & {
     "/r:`"$DotNetDir\System.Core.dll`""
     "/r:`"$DotNetDir\System.ComponentModel.Composition.dll`""
     "/r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-    "/res:`"$(ConvertResXToResources "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Microsoft.Windows.PowerShell.ScriptAnalyzer.Strings.resources")`""
     "/define:PSV3"
     dir "$RepoDir\Engine" -filter *.cs -recurse |
         select-object -expandproperty fullname |
         where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
         where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
-    $(ConvertResXToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
+    $(ConvertResxStringsToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
 }
 
 if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create file')) {
@@ -361,12 +399,11 @@ $compilerArgs = & {
     "/r:`"$DotNetDir\System.Data.Entity.Design.dll`""
     "/r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
     "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
-    "/res:`"$(ConvertResXToResources "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources")`""
     "/define:PSV3"
     dir "$RepoDir\Rules" -filter *.cs -recurse |
         select-object -expandproperty fullname |
         where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
-    $(ConvertResXToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
+    $(ConvertResxStringsToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
 }
 
 if ($pscmdlet.ShouldProcess($rulesPSv3Dll, 'Create file')) {
@@ -417,14 +454,13 @@ $compilerArgs = & {
     "/r:`"$(GetNugetResource 'System.Text.RegularExpressions' '4.3.0' 'ref\netstandard1.6\System.Text.RegularExpressions.dll' -nugetdir $nugetDir)`""
     "/r:`"$(GetNugetResource 'System.Threading' '4.3.0' 'ref\netstandard1.3\System.Threading.dll' -nugetdir $nugetDir)`""
     "/r:`"$(GetNugetResource 'System.Threading.Tasks' '4.3.0' 'ref\netstandard1.3\System.Threading.Tasks.dll' -nugetdir $nugetDir)`""
-    "/res:`"$(ConvertResXToResources "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Microsoft.Windows.PowerShell.ScriptAnalyzer.Strings.resources")`""
     "/define:CORECLR"
     dir "$RepoDir\Engine" -filter *.cs -recurse |
         select-object -expandproperty fullname |
         where-object {$_ -ne "$RepoDir\Engine\SafeDirectoryCatalog.cs"} |
         where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
         where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
-    $(ConvertResXToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
+    $(ConvertResxStringsToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
 }
 
 if ($PSCmdlet.ShouldProcess($engineCoreDll, 'Create file')) {
@@ -478,13 +514,12 @@ $compilerArgs = & {
     "/r:`"$(GetNugetResource 'System.Text.RegularExpressions' '4.3.0' 'ref\netstandard1.6\System.Text.RegularExpressions.dll' -nugetdir $nugetDir)`""
     "/r:`"$(GetNugetResource 'System.Threading' '4.3.0' 'ref\netstandard1.3\System.Threading.dll' -nugetdir $nugetDir)`""
     "/r:`"$(GetNugetResource 'System.Threading.Tasks' '4.3.0' 'ref\netstandard1.3\System.Threading.Tasks.dll' -nugetdir $nugetDir)`""
-    "/res:`"$(ConvertResXToResources "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.Strings.resources")`""
     "/define:CORECLR"
     dir "$RepoDir\Rules" -filter *.cs -recurse |
         select-object -expandproperty fullname |
         where-object {$_ -ne "$RepoDir\Rules\UseSingularNouns.cs"} |
         where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
-    $(ConvertResXToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
+    $(ConvertResxStringsToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
 }
 
 if ($pscmdlet.ShouldProcess($rulesCoreDll, 'Create file')) {
