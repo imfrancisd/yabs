@@ -176,30 +176,30 @@ function ConvertResxStringsToCsharp {
             "    {"
             "        private static CultureInfo _culture;"
             ""
-            "        private static Dictionary<CultureInfo, Dictionary<string, string>> _localizedResources;"
+            "        private static Dictionary<CultureInfo, string[]> _localizedResources;"
             ""
-            "        private static string GetString(string name, CultureInfo culture)"
+            "        private static string GetString(int index, CultureInfo culture)"
             "        {"
             "            while (culture != CultureInfo.InvariantCulture)"
             "            {"
-            "                if (_localizedResources.ContainsKey(culture) && _localizedResources[culture].ContainsKey(name))"
+            "                if (_localizedResources.ContainsKey(culture) && (_localizedResources[culture][index] != null))"
             "                {"
             "                    break;"
             "                }"
             "                culture = culture.Parent;"
             "            }"
             ""
-            "            return _localizedResources[culture][name];"
+            "            return _localizedResources[culture][index];"
             "        }"
             ""
             "        internal static CultureInfo Culture"
             "        {"
             "            get {return _culture;}"
             "            set {_culture = value ?? CultureInfo.InvariantCulture;}"
-            "        }"
-            ""
+            "        }", ""
 
             $resourceContents = [System.Collections.Generic.Dictionary[System.Globalization.CultureInfo, System.Collections.Hashtable]]::new()
+            $resourceDataNames = [System.Collections.Generic.SortedSet[System.String]]::new()
 
             foreach ($entry in $Path.GetEnumerator()) {
                 $culture = [System.Globalization.CultureInfo]::new("$($entry.Key)")
@@ -208,31 +208,36 @@ function ConvertResxStringsToCsharp {
 
                 foreach ($item in $xmlData.GetElementsByTagName('data').GetEnumerator()) {
                     $resourceContents[$culture][$item.name] = $item.value.Replace("\", "\\").Replace('"', '\"').Replace("`r", "\r").Replace("`n", "\n").Replace("`t", "\t")
+                    [System.Void]$resourceDataNames.Add($item.name)
                 }
             }
 
-            $resourceContents.GetEnumerator() |
-                foreach-object {$_.Value.GetEnumerator()} |
-                sort-object {$_.Key} -unique |
-                foreach-object {"        internal static string $($_.Key) {get {return GetString(`"$($_.Key)`", Culture);}}", ""}
+            for ($i, $e = 0, $resourceDataNames.GetEnumerator(); $e.MoveNext(); $i++) {
+                "        internal static string $($e.Current) {get {return GetString($i, Culture);}}", ""
+            }
 
             "        static $($ClassName)()"
             "        {"
             "            Culture = CultureInfo.CurrentUICulture;"
             ""
-            "            _localizedResources = new Dictionary<CultureInfo, Dictionary<string, string>>()"
+            "            _localizedResources = new Dictionary<CultureInfo, string[]>()"
             "            {"
 
-            $resourceContents.GetEnumerator() |
-                sort-object {$_.Key} |
-                foreach-object {
-                    "                [new CultureInfo(`"$($_.Key)`")] = new Dictionary<string, string>()"
-                    "                {"
-                    $_.Value.GetEnumerator() |
-                        sort-object {$_.Key} |
-                        foreach-object {"                    [`"$($_.Key)`"] = `"$($_.Value)`","}
-                    "                },"
+            foreach ($cultureData in @($resourceContents.GetEnumerator() | sort-object {$_.Key})) {
+                $culture = $cultureData.Key
+                $data = $cultureData.Value
+                "                [new CultureInfo(`"$($culture)`")] = new string[]"
+                "                {"
+                foreach ($dataName in $resourceDataNames) {
+                    if ($resourceContents[$culture].ContainsKey($dataName)) {
+                        "                    `"$($resourceContents[$culture][$dataName])`","
+                    }
+                    else {
+                        "                    null,"
+                    }
                 }
+                "                },"
+            }
 
             "            };"
             "        }"
