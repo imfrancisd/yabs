@@ -154,7 +154,11 @@ function ConvertResxStringsToCsharp {
 
         [parameter(Mandatory, Position = 3)]
         [string]
-        $ClassName
+        $ClassName,
+
+        #The public API of the generated code will not return null, but will return string.Empty if necessary.
+        [switch]
+        $NoNullStrings
     )
 
     if ($PSCmdlet.ShouldProcess($Destination, 'Create File')) {
@@ -169,6 +173,7 @@ function ConvertResxStringsToCsharp {
             "using System;"
             "using System.Collections.Generic;"
             "using System.Globalization;"
+            "using System.Linq;"
             ""
             "namespace $Namespace"
             "{"
@@ -189,7 +194,7 @@ function ConvertResxStringsToCsharp {
             "                culture = culture.Parent;"
             "            }"
             ""
-            "            return _localizedResources[culture][index];"
+            "            return _localizedResources[culture][index]$(if ($NoNullStrings) {' ?? string.Empty'} else {''});"
             "        }"
             ""
             "        internal static CultureInfo Culture"
@@ -240,6 +245,11 @@ function ConvertResxStringsToCsharp {
             }
 
             "            };"
+            ""
+            "            if (!_localizedResources.ContainsKey(CultureInfo.InvariantCulture) && (_localizedResources.Count > 0))"
+            "            {"
+            "                _localizedResources.Add(CultureInfo.InvariantCulture, _localizedResources.OrderBy(entry => entry.Key.Name.Length).ThenBy(entry => entry.Key.Name).First().Value);"
+            "            }"
             "        }"
             "    }"
             "}"
