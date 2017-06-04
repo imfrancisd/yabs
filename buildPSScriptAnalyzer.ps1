@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2017-06-03
+Updated 2017-06-04
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -181,20 +181,20 @@ function ConvertResxStringsToCsharp {
             "    {"
             "        private static CultureInfo _culture;"
             ""
-            "        private static Dictionary<CultureInfo, string[]> _localizedResources;"
+            "        private static Dictionary<CultureInfo, Lazy<string[]>> _localizedResources;"
             ""
             "        private static string GetString(int index, CultureInfo culture)"
             "        {"
             "            while (culture != CultureInfo.InvariantCulture)"
             "            {"
-            "                if (_localizedResources.ContainsKey(culture) && (_localizedResources[culture][index] != null))"
+            "                if (_localizedResources.ContainsKey(culture) && (_localizedResources[culture].Value[index] != null))"
             "                {"
             "                    break;"
             "                }"
             "                culture = culture.Parent;"
             "            }"
             ""
-            "            return _localizedResources[culture][index]$(if ($NoNullStrings) {' ?? string.Empty'} else {''});"
+            "            return _localizedResources[culture].Value[index]$(if ($NoNullStrings) {' ?? string.Empty'} else {''});"
             "        }"
             ""
             "        internal static CultureInfo Culture"
@@ -225,13 +225,13 @@ function ConvertResxStringsToCsharp {
             "        {"
             "            Culture = CultureInfo.CurrentUICulture;"
             ""
-            "            _localizedResources = new Dictionary<CultureInfo, string[]>()"
+            "            _localizedResources = new Dictionary<CultureInfo, Lazy<string[]>>()"
             "            {"
 
             foreach ($cultureData in @($resourceContents.GetEnumerator() | sort-object {$_.Key})) {
                 $culture = $cultureData.Key
                 $data = $cultureData.Value
-                "                [new CultureInfo(`"$($culture)`")] = new string[]"
+                "                [new CultureInfo(`"$($culture)`")] = new Lazy<string[]>(() => new string[]"
                 "                {"
                 foreach ($dataName in $resourceDataNames) {
                     if ($resourceContents[$culture].ContainsKey($dataName)) {
@@ -241,7 +241,7 @@ function ConvertResxStringsToCsharp {
                         "                    null,"
                     }
                 }
-                "                },"
+                "                }),"
             }
 
             "            };"
