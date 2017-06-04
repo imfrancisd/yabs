@@ -179,12 +179,13 @@ function ConvertResxStringsToCsharp {
             "{"
             "    internal static class $ClassName"
             "    {"
-            "        private static CultureInfo _culture;"
-            ""
+            "        private static CultureInfo _preferredCulture;"
+            "        private static CultureInfo _preferredCultureAvailable;"
             "        private static Dictionary<CultureInfo, Lazy<string[]>> _localizedResources;"
             ""
-            "        private static string GetString(int index, CultureInfo culture)"
+            "        private static string GetString(int index)"
             "        {"
+            "            var culture = _preferredCultureAvailable;"
             "            while (culture != CultureInfo.InvariantCulture)"
             "            {"
             "                if (_localizedResources.ContainsKey(culture) && (_localizedResources[culture].Value[index] != null))"
@@ -199,9 +200,22 @@ function ConvertResxStringsToCsharp {
             ""
             "        internal static CultureInfo Culture"
             "        {"
-            "            get {return _culture;}"
-            "            set {_culture = value ?? CultureInfo.InvariantCulture;}"
-            "        }", ""
+            "            get {return _preferredCulture;}"
+            "            set"
+            "            {"
+            "                var culturePreferred = value ?? CultureInfo.InvariantCulture;"
+            "                var cultureAvailable = culturePreferred;"
+            ""
+            "                while (!_localizedResources.ContainsKey(cultureAvailable) && (cultureAvailable != CultureInfo.InvariantCulture))"
+            "                {"
+            "                    cultureAvailable = cultureAvailable.Parent;"
+            "                }"
+            ""
+            "                _preferredCulture = culturePreferred;"
+            "                _preferredCultureAvailable = cultureAvailable;"
+            "            }"
+            "        }"
+            ""
 
             $resourceContents = [System.Collections.Generic.Dictionary[System.Globalization.CultureInfo, System.Collections.Hashtable]]::new()
             $resourceDataNames = [System.Collections.Generic.SortedSet[System.String]]::new()
@@ -218,13 +232,11 @@ function ConvertResxStringsToCsharp {
             }
 
             for ($i, $e = 0, $resourceDataNames.GetEnumerator(); $e.MoveNext(); $i++) {
-                "        internal static string $($e.Current) {get {return GetString($i, Culture);}}", ""
+                "        internal static string $($e.Current) {get {return GetString($i);}}", ""
             }
 
             "        static $($ClassName)()"
             "        {"
-            "            Culture = CultureInfo.CurrentUICulture;"
-            ""
             "            _localizedResources = new Dictionary<CultureInfo, Lazy<string[]>>()"
             "            {"
 
@@ -250,6 +262,8 @@ function ConvertResxStringsToCsharp {
             "            {"
             "                _localizedResources.Add(CultureInfo.InvariantCulture, _localizedResources.OrderBy(entry => entry.Key.Name.Length).ThenBy(entry => entry.Key.Name).First().Value);"
             "            }"
+            ""
+            "            Culture = CultureInfo.CurrentUICulture;"
             "        }"
             "    }"
             "}"
