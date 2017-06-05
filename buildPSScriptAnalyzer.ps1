@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2017-06-04
+Updated 2017-06-05
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -200,7 +200,10 @@ function ConvertResxStringsToCsharp {
             ""
             "        internal static CultureInfo Culture"
             "        {"
-            "            get {return _preferredCulture;}"
+            "            get"
+            "            {"
+            "                return _preferredCulture;"
+            "            }"
             "            set"
             "            {"
             "                var culturePreferred = value ?? CultureInfo.InvariantCulture;"
@@ -232,7 +235,7 @@ function ConvertResxStringsToCsharp {
             }
 
             for ($i, $e = 0, $resourceDataNames.GetEnumerator(); $e.MoveNext(); $i++) {
-                "        internal static string $($e.Current) {get {return GetString($i);}}", ""
+                "        internal static string $($e.Current) => GetString($i);", ""
             }
 
             "        static $($ClassName)()"
