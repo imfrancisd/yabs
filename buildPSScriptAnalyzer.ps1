@@ -58,7 +58,7 @@ param(
     #PowerShell versions to target the build.
     [ValidateSet('3', '5', 'Core')]
     [string[]]
-    $PSVersion = '5'
+    $PSVersion = $(if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {'Core'} else {'5'})
 )
 
 
