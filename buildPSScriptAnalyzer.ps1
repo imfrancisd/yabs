@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2017-06-06
+Updated 2017-06-07
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -360,6 +360,7 @@ $compilerArgs = & {
     "/r:`"$DotNetDir\System.Core.dll`""
     "/r:`"$DotNetDir\System.ComponentModel.Composition.dll`""
     "/r:`"$DotNetDir\System.Data.Entity.Design.dll`""
+    "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
     "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
     "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
     dir "$RepoDir\Rules" -filter *.cs -recurse |
@@ -435,6 +436,7 @@ $compilerArgs = & {
     "/r:`"$DotNetDir\System.Core.dll`""
     "/r:`"$DotNetDir\System.ComponentModel.Composition.dll`""
     "/r:`"$DotNetDir\System.Data.Entity.Design.dll`""
+    "/r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
     "/r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
     "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
     "/define:PSV3"
@@ -525,8 +527,9 @@ $compilerArgs = & {
     "/nowarn:1701;1702"
     "/optimize$(if ($Optimize) {'+'} else {'-'})"
     "/r:`"$engineCoreDll`""
-    "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\netstandard1.0\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
     "/r:`"$(GetNugetResource 'Microsoft.CSharp' '4.3.0' 'ref\netstandard1.0\Microsoft.CSharp.dll' -nugetdir $nugetDir)`""
+    "/r:`"$(GetNugetResource 'Microsoft.Management.Infrastructure' '1.0.0-alpha05' 'ref\netstandard1.6\Microsoft.Management.Infrastructure.dll' -nugetdir $nugetDir -nugeturl 'https://powershell.myget.org/F/powershell-core/api/v2')`""
+    "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\netstandard1.0\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
     "/r:`"$(GetNugetResource 'System.Collections' '4.3.0' 'ref\netstandard1.3\System.Collections.dll' -nugetdir $nugetDir)`""
     "/r:`"$(GetNugetResource 'System.Collections.Concurrent' '4.3.0' 'ref\netstandard1.3\System.Collections.Concurrent.dll' -nugetdir $nugetDir)`""
     "/r:`"$(GetNugetResource 'System.Collections.NonGeneric' '4.3.0' 'ref\netstandard1.3\System.Collections.NonGeneric.dll' -nugetdir $nugetDir)`""
