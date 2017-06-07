@@ -53,21 +53,19 @@ param(
     #
     #Note:
     #If you do not specify a path, the script will use [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory(), which will have a value similar to "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\".
-    $DotNetDir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
+    $DotNetDir,
+
+    #PowerShell versions to target the build.
+    [ValidateSet('3', '5', 'Core')]
+    [string[]]
+    $PSVersion = '5'
 )
-
-
-
-if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {
-    throw "Must run build script on a Desktop edition of PowerShell."
-}
 
 
 
 $ErrorActionPreference = 'Stop'
 
 $RepoDir = (get-item $RepoDir).FullName -replace '[\\/]$', ''
-$DotNetDir = (get-item $DotNetDir).FullName -replace '[\\/]$', ''
 $outputDir = "$RepoDir\out"
 $moduleBaseDir = "$RepoDir\out\PSScriptAnalyzer"
 $modulePSv5Dir = "$RepoDir\out\PSScriptAnalyzer"
@@ -306,7 +304,19 @@ if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
 
 
 
+if ($PSVersion -contains '5') {
+
 write-verbose 'Build PSv5 script analyzer engine.' -verbose
+
+if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {
+    throw "Must run build script on a Desktop edition of PowerShell."
+}
+
+if (-not $PSBoundParameters.ContainsKey('DotNetDir')) {
+    $DotNetDir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
+}
+
+$DotNetDir = (get-item $DotNetDir).FullName -replace '[\\/]$', ''
 
 $compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
 $compilerArgs = & {
@@ -338,8 +348,6 @@ if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create file')) {
         throw "Could not create file: $enginePSv5Dll"
     }
 }
-
-
 
 write-verbose 'Build PSv5 script analyzer rules.' -verbose
 
@@ -379,9 +387,23 @@ if ($pscmdlet.ShouldProcess($rulesPSv5Dll, 'Create file')) {
     copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
 }
 
+}
 
+
+
+if ($PSVersion -contains '3') {
 
 write-verbose 'Build PSv3 script analyzer engine.' -verbose
+
+if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {
+    throw "Must run build script on a Desktop edition of PowerShell."
+}
+
+if (-not $PSBoundParameters.ContainsKey('DotNetDir')) {
+    $DotNetDir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
+}
+
+$DotNetDir = (get-item $DotNetDir).FullName -replace '[\\/]$', ''
 
 $compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
 $compilerArgs = & {
@@ -414,8 +436,6 @@ if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create file')) {
         throw "Could not create file: $enginePSv3Dll"
     }
 }
-
-
 
 write-verbose 'Build PSv3 script analyzer rules.' -verbose
 
@@ -456,7 +476,11 @@ if ($pscmdlet.ShouldProcess($rulesPSv3Dll, 'Create file')) {
     copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv3Dir -confirm:$false
 }
 
+}
 
+
+
+if ($PSVersion -contains 'Core') {
 
 write-verbose 'Build PSCore script analyzer engine.' -verbose
 
@@ -510,8 +534,6 @@ if ($PSCmdlet.ShouldProcess($engineCoreDll, 'Create file')) {
         throw "Could not create file: $engineCoreDll"
     }
 }
-
-
 
 write-verbose 'Build PSCore script analyzer rules.' -verbose
 
@@ -569,6 +591,8 @@ if ($pscmdlet.ShouldProcess($rulesCoreDll, 'Create file')) {
     if (-not (test-path $rulesCoreDll)) {
         throw "Could not create file: $rulesCoreDll"
     }
+}
+
 }
 
 
