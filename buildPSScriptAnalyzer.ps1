@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2017-06-07
+Updated 2017-06-08
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -49,11 +49,11 @@ param(
     [string]
     $WarnLevel = '4',
 
-    #Path to the .NET directory.
-    #
-    #Note:
-    #If you do not specify a path, the script will use [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory(), which will have a value similar to "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\".
-    $DotNetDir,
+    #Path to the .NET 4.0 directory, or the .NET 4.0 reference assemblies directory.
+    $DotNet4Dir,
+
+    #Path to the .NET 4.5 directory, or the .NET 4.5 reference assemblies directory.
+    $DotNet45Dir,
 
     #PowerShell versions to target the build.
     [ValidateSet('3', '5', 'Core')]
@@ -308,15 +308,14 @@ if ($PSVersion -contains '5') {
 
     write-verbose 'Build PSv5 script analyzer engine.' -verbose
 
-    if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {
-        throw "Must run build script on a Desktop edition of PowerShell."
+    if (-not $PSBoundParameters.ContainsKey('DotNet45Dir')) {
+        if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {
+            throw "Must specify .NET 4.5 reference assemblies."
+        }
+        $DotNet45Dir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
     }
 
-    if (-not $PSBoundParameters.ContainsKey('DotNetDir')) {
-        $DotNetDir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
-    }
-
-    $DotNetDir = (get-item $DotNetDir).FullName -replace '[\\/]$', ''
+    $DotNet45Dir = (get-item $DotNet45Dir).FullName -replace '[\\/]$', ''
 
     $compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
     $compilerArgs = & {
@@ -328,11 +327,11 @@ if ($PSVersion -contains '5') {
         "/platform:$Platform"
         "/warn:$WarnLevel"
         "/optimize$(if ($Optimize) {'+'} else {'-'})"
-        "/r:`"$DotNetDir\Microsoft.CSharp.dll`""
-        "/r:`"$DotNetDir\mscorlib.dll`""
-        "/r:`"$DotNetDir\System.dll`""
-        "/r:`"$DotNetDir\System.Core.dll`""
-        "/r:`"$DotNetDir\System.ComponentModel.Composition.dll`""
+        "/r:`"$DotNet45Dir\Microsoft.CSharp.dll`""
+        "/r:`"$DotNet45Dir\mscorlib.dll`""
+        "/r:`"$DotNet45Dir\System.dll`""
+        "/r:`"$DotNet45Dir\System.Core.dll`""
+        "/r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
         dir "$RepoDir\Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
@@ -362,12 +361,12 @@ if ($PSVersion -contains '5') {
         "/warn:$WarnLevel"
         "/optimize$(if ($Optimize) {'+'} else {'-'})"
         "/r:`"$enginePSv5Dll`""
-        "/r:`"$DotNetDir\Microsoft.CSharp.dll`""
-        "/r:`"$DotNetDir\mscorlib.dll`""
-        "/r:`"$DotNetDir\System.dll`""
-        "/r:`"$DotNetDir\System.Core.dll`""
-        "/r:`"$DotNetDir\System.ComponentModel.Composition.dll`""
-        "/r:`"$DotNetDir\System.Data.Entity.Design.dll`""
+        "/r:`"$DotNet45Dir\Microsoft.CSharp.dll`""
+        "/r:`"$DotNet45Dir\mscorlib.dll`""
+        "/r:`"$DotNet45Dir\System.dll`""
+        "/r:`"$DotNet45Dir\System.Core.dll`""
+        "/r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
+        "/r:`"$DotNet45Dir\System.Data.Entity.Design.dll`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
@@ -395,15 +394,14 @@ if ($PSVersion -contains '3') {
 
     write-verbose 'Build PSv3 script analyzer engine.' -verbose
 
-    if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {
-        throw "Must run build script on a Desktop edition of PowerShell."
+    if (-not $PSBoundParameters.ContainsKey('DotNet4Dir')) {
+        if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {
+            throw "Must specify .NET 4.0 reference assemblies."
+        }
+        $DotNet4Dir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
     }
 
-    if (-not $PSBoundParameters.ContainsKey('DotNetDir')) {
-        $DotNetDir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
-    }
-
-    $DotNetDir = (get-item $DotNetDir).FullName -replace '[\\/]$', ''
+    $DotNet4Dir = (get-item $DotNet4Dir).FullName -replace '[\\/]$', ''
 
     $compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
     $compilerArgs = & {
@@ -415,11 +413,11 @@ if ($PSVersion -contains '3') {
         "/platform:$Platform"
         "/warn:$WarnLevel"
         "/optimize$(if ($Optimize) {'+'} else {'-'})"
-        "/r:`"$DotNetDir\Microsoft.CSharp.dll`""
-        "/r:`"$DotNetDir\mscorlib.dll`""
-        "/r:`"$DotNetDir\System.dll`""
-        "/r:`"$DotNetDir\System.Core.dll`""
-        "/r:`"$DotNetDir\System.ComponentModel.Composition.dll`""
+        "/r:`"$DotNet4Dir\Microsoft.CSharp.dll`""
+        "/r:`"$DotNet4Dir\mscorlib.dll`""
+        "/r:`"$DotNet4Dir\System.dll`""
+        "/r:`"$DotNet4Dir\System.Core.dll`""
+        "/r:`"$DotNet4Dir\System.ComponentModel.Composition.dll`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
         "/define:PSV3"
         dir "$RepoDir\Engine" -filter *.cs -recurse |
@@ -450,12 +448,12 @@ if ($PSVersion -contains '3') {
         "/warn:$WarnLevel"
         "/optimize$(if ($Optimize) {'+'} else {'-'})"
         "/r:`"$enginePSv3Dll`""
-        "/r:`"$DotNetDir\Microsoft.CSharp.dll`""
-        "/r:`"$DotNetDir\mscorlib.dll`""
-        "/r:`"$DotNetDir\System.dll`""
-        "/r:`"$DotNetDir\System.Core.dll`""
-        "/r:`"$DotNetDir\System.ComponentModel.Composition.dll`""
-        "/r:`"$DotNetDir\System.Data.Entity.Design.dll`""
+        "/r:`"$DotNet4Dir\Microsoft.CSharp.dll`""
+        "/r:`"$DotNet4Dir\mscorlib.dll`""
+        "/r:`"$DotNet4Dir\System.dll`""
+        "/r:`"$DotNet4Dir\System.Core.dll`""
+        "/r:`"$DotNet4Dir\System.ComponentModel.Composition.dll`""
+        "/r:`"$DotNet4Dir\System.Data.Entity.Design.dll`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
@@ -640,7 +638,7 @@ if ($PSCmdlet.ShouldProcess($testFile, 'Create script that runs tests')) {
 
 if ($PSCmdlet.ShouldProcess($testFile, 'Run script that runs tests')) {
     if (get-module pester -list) {
-        powershell.exe -noprofile -executionpolicy remotesigned -noninteractive -file "$testFile"
+        & ([System.Diagnostics.Process]::GetCurrentProcess().Path) -noprofile -executionpolicy remotesigned -noninteractive -file "$testFile"
     }
     else {
         write-warning "TODO: test module with pester" -warningaction continue
