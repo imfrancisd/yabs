@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2017-06-08
+Updated 2017-06-09
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -26,6 +26,18 @@ param(
     [string]
     $RepoDir,
 
+    #Path to the csc.exe C# compiler.
+    [string]
+    $CscExe,
+
+    #Path to the .NET 4.0 reference assemblies directory.
+    [string]
+    $DotNet4Dir,
+
+    #Path to the .NET 4.5 reference assemblies directory.
+    [string]
+    $DotNet45Dir,
+
     #Compiler option.
     #Find more information at:
     #/optimize (C# Compiler Options)
@@ -41,29 +53,24 @@ param(
     [string]
     $Platform = 'anycpu',
 
+    #PowerShell versions to target the build.
+    [ValidateSet('3', '5', 'Core')]
+    [string[]]
+    $PSVersion = $(if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {'Core'} else {'5'}),
+
     #Compiler option.
     #Find more information at:
     #/warn (C# Compiler Options)
     #https://msdn.microsoft.com/en-us/library/13b90fz7.aspx
     [ValidateSet('0', '1', '2', '3', '4')]
     [string]
-    $WarnLevel = '4',
-
-    #Path to the .NET 4.0 directory, or the .NET 4.0 reference assemblies directory.
-    $DotNet4Dir,
-
-    #Path to the .NET 4.5 directory, or the .NET 4.5 reference assemblies directory.
-    $DotNet45Dir,
-
-    #PowerShell versions to target the build.
-    [ValidateSet('3', '5', 'Core')]
-    [string[]]
-    $PSVersion = $(if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {'Core'} else {'5'})
+    $WarnLevel = '4'
 )
 
 
 
 $ErrorActionPreference = 'Stop'
+$isPSCoreProcess = ($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)
 
 $RepoDir = (get-item $RepoDir).FullName -replace '[\\/]$', ''
 $outputDir = "$RepoDir\out"
@@ -306,20 +313,37 @@ if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
 
 
 
+write-verbose 'Get C# compiler.' -verbose
+
+if (-not [string]::IsNullOrWhiteSpace($CscExe) -and (test-path $CscExe)) {
+    $compiler = $CscExe
+}
+elseif ($isPSCoreProcess) {
+    $compiler = GetNugetResource 'Microsoft.Net.Compilers.netcore' '1.3.2' 'runtimes\any\native\csc.exe' -nugetDir $nugetDir
+}
+else {
+    $compiler = GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir
+}
+
+write-verbose "$compiler" -verbose
+
+
+
 if ($PSVersion -contains '5') {
 
     write-verbose 'Build PSv5 script analyzer engine.' -verbose
 
     if (-not $PSBoundParameters.ContainsKey('DotNet45Dir')) {
-        if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {
+        if ($isPSCoreProcess) {
             throw "Must specify .NET 4.5 reference assemblies."
         }
-        $DotNet45Dir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
+        else {
+            write-warning '*** Using unknown .NET framework in place of .NET 4.5. Specify -DotNet45Dir. ***'
+            $DotNet45Dir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
+        }
     }
-
     $DotNet45Dir = (get-item $DotNet45Dir).FullName -replace '[\\/]$', ''
 
-    $compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
     $compilerArgs = & {
         '/nologo'
         '/nostdlib'
@@ -352,7 +376,6 @@ if ($PSVersion -contains '5') {
 
     write-verbose 'Build PSv5 script analyzer rules.' -verbose
 
-    $compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
     $compilerArgs = & {
         '/nologo'
         '/nostdlib'
@@ -397,15 +420,16 @@ if ($PSVersion -contains '3') {
     write-verbose 'Build PSv3 script analyzer engine.' -verbose
 
     if (-not $PSBoundParameters.ContainsKey('DotNet4Dir')) {
-        if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {
+        if ($isPSCoreProcess) {
             throw "Must specify .NET 4.0 reference assemblies."
         }
-        $DotNet4Dir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
+        else {
+            write-warning '*** Using unknown .NET framework in place of .NET 4.0. Specify -DotNet4Dir. ***'
+            $DotNet4Dir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
+        }
     }
-
     $DotNet4Dir = (get-item $DotNet4Dir).FullName -replace '[\\/]$', ''
 
-    $compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
     $compilerArgs = & {
         '/nologo'
         '/nostdlib'
@@ -439,7 +463,6 @@ if ($PSVersion -contains '3') {
 
     write-verbose 'Build PSv3 script analyzer rules.' -verbose
 
-    $compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
     $compilerArgs = & {
         '/nologo'
         '/nostdlib'
@@ -484,7 +507,6 @@ if ($PSVersion -contains 'Core') {
 
     write-verbose 'Build PSCore script analyzer engine.' -verbose
 
-    $compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
     $compilerArgs = & {
         '/nologo'
         '/nostdlib'
@@ -537,7 +559,6 @@ if ($PSVersion -contains 'Core') {
 
     write-verbose 'Build PSCore script analyzer rules.' -verbose
 
-    $compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.2.0' 'tools\csc.exe' -nugetDir $nugetDir
     $compilerArgs = & {
         '/nologo'
         '/nostdlib'
