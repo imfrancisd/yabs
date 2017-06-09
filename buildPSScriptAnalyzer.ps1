@@ -239,7 +239,11 @@ function ConvertResxStringsToCsharp {
             }
 
             for ($i, $e = 0, $resourceDataNames.GetEnumerator(); $e.MoveNext(); $i++) {
-                "        internal static string $($e.Current) => GetString($i);", ""
+                "        internal static string $($e.Current)"
+                "        {"
+                "            get { return GetString($i); }"
+                "        }"
+                ""
             }
 
             "        static $($ClassName)()"
@@ -250,8 +254,7 @@ function ConvertResxStringsToCsharp {
             foreach ($cultureData in @($resourceContents.GetEnumerator() | sort-object {$_.Key})) {
                 $culture = $cultureData.Key
                 $data = $cultureData.Value
-                "                [new CultureInfo(`"$($culture)`")] = new Lazy<string[]>(() => new string[]"
-                "                {"
+                "                {new CultureInfo(`"$($culture)`"), new Lazy<string[]>(() => new string[] {"
                 foreach ($dataName in $resourceDataNames) {
                     if ($resourceContents[$culture].ContainsKey($dataName)) {
                         "                    `"$($resourceContents[$culture][$dataName])`","
@@ -260,7 +263,7 @@ function ConvertResxStringsToCsharp {
                         "                    null,"
                     }
                 }
-                "                }),"
+                "                })},"
             }
 
             "            };"
