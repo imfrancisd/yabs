@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2017-06-09
+Updated 2017-06-24
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -54,7 +54,7 @@ param(
     $Platform = 'anycpu',
 
     #PowerShell versions to target the build.
-    [ValidateSet('3', '5', 'Core')]
+    [ValidateSet('3', '4', '5', 'Core')]
     [string[]]
     $PSVersion = $(if (($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)) {'Core'} else {'5'}),
 
@@ -72,10 +72,15 @@ param(
 $ErrorActionPreference = 'Stop'
 $isPSCoreProcess = ($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)
 
+if (($PSVersion -contains '3') -and ($PSVersion -contains '4')) {
+    $PSVersion = @($PSVersion | where-object {$_ -ne '3'})
+}
+
 $RepoDir = (get-item $RepoDir).FullName -replace '[\\/]$', ''
 $outputDir = "$RepoDir\out"
 $moduleBaseDir = "$RepoDir\out\PSScriptAnalyzer"
 $modulePSv5Dir = "$RepoDir\out\PSScriptAnalyzer"
+$modulePSv4Dir = "$RepoDir\out\PSScriptAnalyzer\PSv3"
 $modulePSv3Dir = "$RepoDir\out\PSScriptAnalyzer\PSv3"
 $moduleCoreDir = "$RepoDir\out\PSScriptAnalyzer\coreclr"
 $helpDir = "$RepoDir\out\PSScriptAnalyzer\en-US"
@@ -83,9 +88,11 @@ $testDir = "$RepoDir\tmp\test"
 $nugetDir = "$RepoDir\tmp\.nuget"
 
 $enginePSv5Dll = "$modulePSv5Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
+$enginePSv4Dll = "$modulePSv4Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
 $enginePSv3Dll = "$modulePSv3Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
 $engineCoreDll = "$moduleCoreDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
 $rulesPSv5Dll = "$modulePSv5Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
+$rulesPSv4Dll = "$modulePSv4Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
 $rulesPSv3Dll = "$modulePSv3Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
 $rulesCoreDll = "$moduleCoreDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
 
@@ -298,11 +305,11 @@ function ConvertResxStringsToCsharp {
 write-verbose 'Create output directory structure.' -verbose
 
 if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
-    $moduleBaseDir, $modulePSv5Dir, $modulePSv3Dir, $moduleCoreDir, $helpDir, $testDir |
+    $moduleBaseDir, $modulePSv5Dir, $modulePSv4Dir, $modulePSv3Dir, $moduleCoreDir, $helpDir, $testDir |
         where-object {test-path $_} |
         foreach-object {remove-item $_ -recurse -force -confirm:$false}
 
-    $moduleBaseDir, $modulePSv5Dir, $modulePSv3Dir, $moduleCoreDir, $helpDir, $testdir, $nugetDir |
+    $moduleBaseDir, $modulePSv5Dir, $modulePSv4Dir, $modulePSv3Dir, $moduleCoreDir, $helpDir, $testdir, $nugetDir |
         foreach-object {new-item -itemtype directory $_ -force -confirm:$false | out-null}
 
     copy-item "$RepoDir\Engine\PSScriptAnalyzer.ps[dm]1" $moduleBaseDir -confirm:$false
@@ -409,6 +416,94 @@ if ($PSVersion -contains '5') {
         }
 
         copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
+    }
+
+}
+
+
+
+if ($PSVersion -contains '4') {
+
+    write-verbose 'Build PSv4 script analyzer engine.' -verbose
+
+    if (-not $PSBoundParameters.ContainsKey('DotNet45Dir')) {
+        if ($isPSCoreProcess) {
+            throw "Must specify .NET 4.5 reference assemblies."
+        }
+        else {
+            write-warning '*** Using unknown .NET framework in place of .NET 4.5. Specify -DotNet45Dir. ***'
+            $DotNet45Dir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
+        }
+    }
+    $DotNet45Dir = (get-item $DotNet45Dir).FullName -replace '[\\/]$', ''
+
+    $compilerArgs = & {
+        '/nologo'
+        '/nostdlib'
+        '/noconfig'
+        "/out:`"$enginePSv4Dll`""
+        "/target:library"
+        "/platform:$Platform"
+        "/warn:$WarnLevel"
+        "/optimize$(if ($Optimize) {'+'} else {'-'})"
+        "/r:`"$DotNet45Dir\Microsoft.CSharp.dll`""
+        "/r:`"$DotNet45Dir\mscorlib.dll`""
+        "/r:`"$DotNet45Dir\System.dll`""
+        "/r:`"$DotNet45Dir\System.Core.dll`""
+        "/r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
+        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "/define:PSV3"
+        dir "$RepoDir\Engine" -filter *.cs -recurse |
+            select-object -expandproperty fullname |
+            where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
+            where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
+        $(ConvertResxStringsToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
+    }
+
+    if ($PSCmdlet.ShouldProcess($enginePSv4Dll, 'Create file')) {
+        & $compiler $compilerArgs
+
+        if (-not (test-path $enginePSv4Dll)) {
+            throw "Could not create file: $enginePSv4Dll"
+        }
+    }
+
+    write-verbose 'Build PSv4 script analyzer rules.' -verbose
+
+    $compilerArgs = & {
+        '/nologo'
+        '/nostdlib'
+        '/noconfig'
+        "/out:`"$rulesPSv4Dll`""
+        "/target:library"
+        "/platform:$Platform"
+        "/warn:$WarnLevel"
+        "/optimize$(if ($Optimize) {'+'} else {'-'})"
+        "/r:`"$enginePSv4Dll`""
+        "/r:`"$DotNet45Dir\Microsoft.CSharp.dll`""
+        "/r:`"$DotNet45Dir\mscorlib.dll`""
+        "/r:`"$DotNet45Dir\System.dll`""
+        "/r:`"$DotNet45Dir\System.Core.dll`""
+        "/r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
+        "/r:`"$DotNet45Dir\System.Data.Entity.Design.dll`""
+        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "/define:PSV3"
+        dir "$RepoDir\Rules" -filter *.cs -recurse |
+            select-object -expandproperty fullname |
+            where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
+        $(ConvertResxStringsToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
+    }
+
+    if ($pscmdlet.ShouldProcess($rulesPSv4Dll, 'Create file')) {
+        & $compiler $compilerArgs
+
+        if (-not (test-path $rulesPSv4Dll)) {
+            throw "Could not create file: $rulesPSv4Dll"
+        }
+
+        copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv4Dir -confirm:$false
     }
 
 }
