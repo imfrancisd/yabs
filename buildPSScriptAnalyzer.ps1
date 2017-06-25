@@ -756,7 +756,17 @@ if ($PSCmdlet.ShouldProcess($testFile, 'Create script that runs tests')) {
 
 if ($PSCmdlet.ShouldProcess($testFile, 'Run script that runs tests')) {
     if (get-module pester -list) {
-        & ([System.Diagnostics.Process]::GetCurrentProcess().Path) -noprofile -executionpolicy remotesigned -noninteractive -file "$testFile"
+        $powershellProcessPath = [System.Diagnostics.Process]::GetCurrentProcess().Path
+        if ((split-path $powershellProcessPath -leaf) -ne 'powershell.exe') {
+            $powershellProcessPath = 'powershell.exe'
+        }
+        try {
+            $ErrorActionPreference = [System.Management.Automation.ActionPreference]::Continue
+            & $powershellProcessPath -noprofile -executionpolicy remotesigned -noninteractive -file "$testFile"
+        }
+        finally {
+            $ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
+        }
     }
     else {
         write-warning "TODO: test module with pester" -warningaction continue
