@@ -326,7 +326,7 @@ if (-not [string]::IsNullOrWhiteSpace($CscExe) -and (test-path $CscExe)) {
     $compiler = $CscExe
 }
 elseif ($isPSCoreProcess) {
-    $compiler = GetNugetResource 'Microsoft.Net.Compilers.netcore' '1.3.2' 'runtimes\any\native\csc.exe' -nugetDir $nugetDir
+    throw "Must specify -CscExe with the file path to the C# compiler."
 }
 else {
     $compiler = GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir
