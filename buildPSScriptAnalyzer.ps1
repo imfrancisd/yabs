@@ -368,7 +368,7 @@ if ($PSVersion -contains '5') {
         "/r:`"$DotNet45Dir\System.dll`""
         "/r:`"$DotNet45Dir\System.Core.dll`""
         "/r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
-        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.1.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
         dir "$RepoDir\Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
@@ -402,8 +402,8 @@ if ($PSVersion -contains '5') {
         "/r:`"$DotNet45Dir\System.Core.dll`""
         "/r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
         "/r:`"$DotNet45Dir\System.Data.Entity.Design.dll`""
-        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
-        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.1.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.1.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Newtonsoft.Json' '10.0.3' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
