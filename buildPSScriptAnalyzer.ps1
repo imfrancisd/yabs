@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2017-06-28
+Updated 2018-02-20
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -404,7 +404,7 @@ if ($PSVersion -contains '5') {
         "/r:`"$DotNet45Dir\System.Data.Entity.Design.dll`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.5.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Newtonsoft.Json' '10.0.3' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
@@ -418,7 +418,7 @@ if ($PSVersion -contains '5') {
             throw "Could not create file: $rulesPSv5Dll"
         }
 
-        copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
+        copy-item $(GetNugetResource 'Newtonsoft.Json' '10.0.3' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
     }
 
 }
@@ -491,7 +491,7 @@ if ($PSVersion -contains '4') {
         "/r:`"$DotNet45Dir\System.Data.Entity.Design.dll`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Newtonsoft.Json' '10.0.3' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         "/define:PSV3"
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
@@ -506,7 +506,7 @@ if ($PSVersion -contains '4') {
             throw "Could not create file: $rulesPSv4Dll"
         }
 
-        copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv4Dir -confirm:$false
+        copy-item $(GetNugetResource 'Newtonsoft.Json' '10.0.3' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv4Dir -confirm:$false
     }
 
 }
@@ -579,7 +579,7 @@ if ($PSVersion -contains '3') {
         "/r:`"$DotNet4Dir\System.Data.Entity.Design.dll`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Newtonsoft.Json' '10.0.3' 'lib\net40\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         "/define:PSV3"
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
@@ -594,7 +594,7 @@ if ($PSVersion -contains '3') {
             throw "Could not create file: $rulesPSv3Dll"
         }
 
-        copy-item $(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv3Dir -confirm:$false
+        copy-item $(GetNugetResource 'Newtonsoft.Json' '10.0.3' 'lib\net40\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv3Dir -confirm:$false
     }
 
 }
@@ -670,7 +670,7 @@ if ($PSVersion -contains 'Core') {
         "/r:`"$engineCoreDll`""
         "/r:`"$(GetNugetResource 'Microsoft.CSharp' '4.3.0' 'ref\netstandard1.0\Microsoft.CSharp.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.Management.Infrastructure' '1.0.0-alpha05' 'ref\netstandard1.6\Microsoft.Management.Infrastructure.dll' -nugetdir $nugetDir -nugeturl 'https://powershell.myget.org/F/powershell-core/api/v2')`""
-        "/r:`"$(GetNugetResource 'Newtonsoft.Json' '9.0.1' 'lib\netstandard1.0\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Newtonsoft.Json' '10.0.3' 'lib\netstandard1.3\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         "/r:`"$(GetNugetResource 'System.Collections' '4.3.0' 'ref\netstandard1.3\System.Collections.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'System.Collections.Concurrent' '4.3.0' 'ref\netstandard1.3\System.Collections.Concurrent.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'System.Collections.NonGeneric' '4.3.0' 'ref\netstandard1.3\System.Collections.NonGeneric.dll' -nugetdir $nugetDir)`""
