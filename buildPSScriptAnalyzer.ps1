@@ -85,6 +85,8 @@ $modulePSv3Dir = "$RepoDir\out\PSScriptAnalyzer\PSv3"
 $moduleCoreDir = "$RepoDir\out\PSScriptAnalyzer\coreclr"
 $helpDir = "$RepoDir\out\PSScriptAnalyzer\en-US"
 $testDir = "$RepoDir\tmp\test"
+$testRunner = "$testDir\testRunner.ps1"
+$testResult = "$testDir\testResult.xml"
 $nugetDir = "$RepoDir\tmp\.nuget"
 
 $enginePSv5Dll = "$modulePSv5Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
@@ -734,8 +736,7 @@ if ($PSCmdlet.ShouldProcess($helpDir, 'Create PSScriptAnalyzer Module Help Direc
 
 write-verbose 'Run tests.' -verbose
 
-$testFile = "$testDir\testRunner.ps1"
-if ($PSCmdlet.ShouldProcess($testFile, 'Create script that runs tests')) {
+if ($PSCmdlet.ShouldProcess($testRunner, 'Create script that runs tests')) {
     @"
     #Run this test script with another powershell
     #so that you do not import the built module's dll to your powershell,
@@ -745,30 +746,31 @@ if ($PSCmdlet.ShouldProcess($testFile, 'Create script that runs tests')) {
     #We can either install PSScriptAnalyzer in `$env:PSModulePath, or
     #we can temporarily change `$env:PSModulePath.
 
-    import-module '$moduleBaseDir'
     `$env:PSModulePath = "$outputDir;`$(`$env:PSModulePath)"
+    Import-Module 'PSScriptAnalyzer' -Verbose
 
-    set-location '$RepoDir\Tests\Engine'
-    `$engineResults = pester\invoke-pester -passthru
+    Pester\Invoke-Pester -Script @('$RepoDir\Tests\Engine', '$RepoDir\Tests\Rules') -OutputFile '$testResult' -OutputFormat NUnitXml
 
-    set-location '$RepoDir\Tests\Rules'
-    `$rulesResults = pester\invoke-pester -passthru
-
-    write-verbose "Test Results (Engine) | Passed: `$(`$engineResults.PassedCount), Failed: `$(`$engineResults.FailedCount), Skipped: `$(`$engineResults.SkippedCount)" -verbose
-    write-verbose "Test Results (Rules)  | Passed: `$(`$rulesResults.PassedCount), Failed: `$(`$rulesResults.FailedCount), Skipped: `$(`$rulesResults.SkippedCount)" -verbose
+    if (Test-Path '$testResult') {
+        Get-Item '$testResult'
+    }
 "@ |
-        out-file $testFile -encoding utf8 -force -confirm:$false
+        out-file $testRunner -encoding utf8 -force -confirm:$false
 }
 
-if ($PSCmdlet.ShouldProcess($testFile, 'Run script that runs tests')) {
+if ($PSCmdlet.ShouldProcess($testRunner, 'Run script that runs tests')) {
     if (get-module pester -list) {
-        $powershellProcessPath = [System.Diagnostics.Process]::GetCurrentProcess().Path
-        if ((split-path $powershellProcessPath -leaf) -ne 'powershell.exe') {
+        $powershellProcess = [System.Diagnostics.Process]::GetCurrentProcess()
+        $powershellProcessPath = $powershellProcess.Path
+        if (@('powershell', 'pwsh') -notcontains $powershellProcess.Name) {
             $powershellProcessPath = 'powershell.exe'
         }
+
         try {
             $ErrorActionPreference = [System.Management.Automation.ActionPreference]::Continue
-            & $powershellProcessPath -noprofile -executionpolicy remotesigned -noninteractive -file "$testFile"
+
+            write-verbose "& $powershellProcessPath -noprofile -executionpolicy remotesigned -noninteractive -file `"$testRunner`"" -verbose
+            & $powershellProcessPath -noprofile -executionpolicy remotesigned -noninteractive -file "$testRunner"
         }
         finally {
             $ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
@@ -782,5 +784,5 @@ if ($PSCmdlet.ShouldProcess($testFile, 'Run script that runs tests')) {
 
 
 if ((-not $WhatIfPreference) -and (test-path "$moduleBaseDir\*.psd1")) {
-    get-item "$moduleBaseDir\*.psd1"
+    get-item "$moduleBaseDir"
 }
