@@ -334,7 +334,7 @@ elseif ($isPSCoreProcess) {
     throw "Must specify -CscExe with the file path to the C# compiler."
 }
 else {
-    $compiler = GetNugetResource 'Microsoft.Net.Compilers' '1.3.2' 'tools\csc.exe' -nugetDir $nugetDir
+    $compiler = GetNugetResource 'Microsoft.Net.Compilers' '2.0.1' 'tools\csc.exe' -nugetDir $nugetDir
 }
 
 write-verbose "$compiler" -verbose
