@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2018-02-20
+Updated 2018-03-03
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -622,6 +622,7 @@ if ($PSVersion -contains 'Core') {
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.0.0' 'ref\netcoreapp2.0\System.Collections.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.0.0' 'ref\netcoreapp2.0\System.Collections.Concurrent.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.0.0' 'ref\netcoreapp2.0\System.Collections.NonGeneric.dll' -nugetdir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.0.0' 'ref\netcoreapp2.0\System.Console.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.0.0' 'ref\netcoreapp2.0\System.Diagnostics.Debug.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.0.0' 'ref\netcoreapp2.0\System.Diagnostics.Tools.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.0.0' 'ref\netcoreapp2.0\System.Dynamic.Runtime.dll' -nugetdir $nugetDir)`""
