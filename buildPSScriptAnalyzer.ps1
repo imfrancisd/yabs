@@ -183,6 +183,8 @@ function ConvertResxStringsToCsharp {
             throw "Path must be a file path or a hashtable."
         }
 
+        mkdir -force (split-path $Destination -parent) | out-null
+
         &{
             "using System;"
             "using System.Collections.Generic;"
