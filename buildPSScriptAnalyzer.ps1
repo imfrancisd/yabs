@@ -343,6 +343,13 @@ write-verbose "$compiler" -verbose
 
 
 
+write-verbose 'Generate string resources.' -verbose
+
+write-verbose "$(ConvertResxStringsToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\gen\Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")"
+write-verbose "$(ConvertResxStringsToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\gen\Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")"
+
+
+
 if ($PSVersion -contains '5') {
 
     write-verbose 'Build PSv5 script analyzer engine.' -verbose
@@ -377,7 +384,6 @@ if ($PSVersion -contains '5') {
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
             where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
-        $(ConvertResxStringsToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create file')) {
@@ -412,7 +418,6 @@ if ($PSVersion -contains '5') {
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
-        $(ConvertResxStringsToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv5Dll, 'Create file')) {
@@ -464,7 +469,6 @@ if ($PSVersion -contains '4') {
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
             where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
-        $(ConvertResxStringsToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv4Dll, 'Create file')) {
@@ -500,7 +504,6 @@ if ($PSVersion -contains '4') {
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
-        $(ConvertResxStringsToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv4Dll, 'Create file')) {
@@ -552,7 +555,6 @@ if ($PSVersion -contains '3') {
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
             where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
-        $(ConvertResxStringsToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create file')) {
@@ -588,7 +590,6 @@ if ($PSVersion -contains '3') {
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
-        $(ConvertResxStringsToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv3Dll, 'Create file')) {
@@ -650,7 +651,6 @@ if ($PSVersion -contains 'Core') {
             where-object {$_ -ne "$RepoDir\Engine\SafeDirectoryCatalog.cs"} |
             where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
             where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
-        $(ConvertResxStringsToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")
     }
 
     if ($PSCmdlet.ShouldProcess($engineCoreDll, 'Create file')) {
@@ -709,7 +709,6 @@ if ($PSVersion -contains 'Core') {
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Rules\UseSingularNouns.cs"} |
             where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
-        $(ConvertResxStringsToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\Strings.Designer.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")
     }
 
     if ($pscmdlet.ShouldProcess($rulesCoreDll, 'Create file')) {
