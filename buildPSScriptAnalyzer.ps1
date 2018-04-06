@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2018-03-03
+Updated 2018-04-06
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -72,15 +72,11 @@ param(
 $ErrorActionPreference = 'Stop'
 $isPSCoreProcess = ($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)
 
-if (($PSVersion -contains '3') -and ($PSVersion -contains '4')) {
-    $PSVersion = @($PSVersion | where-object {$_ -ne '3'})
-}
-
 $RepoDir = (get-item $RepoDir).FullName -replace '[\\/]$', ''
 $outputDir = "$RepoDir\out"
 $moduleBaseDir = "$RepoDir\out\PSScriptAnalyzer"
 $modulePSv5Dir = "$RepoDir\out\PSScriptAnalyzer"
-$modulePSv4Dir = "$RepoDir\out\PSScriptAnalyzer\PSv3"
+$modulePSv4Dir = "$RepoDir\out\PSScriptAnalyzer\PSv4"
 $modulePSv3Dir = "$RepoDir\out\PSScriptAnalyzer\PSv3"
 $moduleCoreDir = "$RepoDir\out\PSScriptAnalyzer\coreclr"
 $helpDir = "$RepoDir\out\PSScriptAnalyzer\en-US"
@@ -464,7 +460,10 @@ if ($PSVersion -contains '4') {
         "/r:`"$DotNet45Dir\System.Core.dll`""
         "/r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "/define:PSV3"
+
+        #For now, needs PSV3 defined to build.
+        "/define:PSV3;PSV4"
+
         dir "$RepoDir\Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
@@ -500,7 +499,10 @@ if ($PSVersion -contains '4') {
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Newtonsoft.Json' '10.0.3' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
-        "/define:PSV3"
+
+        #For now, needs PSV3 defined to build.
+        "/define:PSV3;PSV4"
+
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
