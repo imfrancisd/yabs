@@ -865,7 +865,7 @@ if ($PSCmdlet.ShouldProcess($testRunner, 'Create script that runs tests')) {
     #We can either install PSScriptAnalyzer in `$env:PSModulePath, or
     #we can temporarily change `$env:PSModulePath.
 
-    `$env:PSModulePath = "$outputDir;`$(`$env:PSModulePath)"
+    `$env:PSModulePath = "$outputDir$([System.IO.Path]::PathSeparator)`$(`$env:PSModulePath)"
     Import-Module 'PSScriptAnalyzer' -Verbose
 
     Pester\Invoke-Pester -Script @('$RepoDir\Tests\Engine', '$RepoDir\Tests\Rules', '$RepoDir\Tests\Documentation') -OutputFile '$testResult' -OutputFormat NUnitXml
