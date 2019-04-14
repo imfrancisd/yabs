@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2019-04-12
+Updated 2019-04-13
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -736,7 +736,7 @@ if ($PSVersion -contains 'Core') {
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.Extensions.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Text.RegularExpressions.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Threading.dll' -nugetdir $nugetDir)`""
-        "/r:`"$(GetNugetResource 'System.Management.Automation' '6.2.0' 'ref\netcoreapp2.1\System.Management.Automation.dll' -nugetdir $nugetDir -nugeturl 'https://powershell.myget.org/F/powershell-core/api/v2')`""
+        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref\netcoreapp2.1\System.Management.Automation.dll' -nugetdir $nugetDir)`""
         "/define:CORECLR"
         dir "$RepoDir\Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
@@ -776,8 +776,8 @@ if ($PSVersion -contains 'Core') {
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.InteropServices.RuntimeInformation.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.Serialization.Primitives.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Threading.Tasks.dll' -nugetdir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref\netcoreapp2.1\System.Management.Automation.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib\netstandard2.0\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
-        "/r:`"$(GetNugetResource 'System.Management.Automation' '6.2.0' 'ref\netcoreapp2.1\System.Management.Automation.dll' -nugetdir $nugetDir -nugeturl 'https://powershell.myget.org/F/powershell-core/api/v2')`""
         "/recurse:`"$RepoDir\PSCompatibilityAnalyzer\Microsoft.PowerShell.CrossCompatibility\*.cs`""
         "/define:CORECLR"
     }
@@ -818,9 +818,9 @@ if ($PSVersion -contains 'Core') {
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.Extensions.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.InteropServices.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Text.RegularExpressions.dll' -nugetdir $nugetDir)`""
-        "/r:`"$(GetNugetResource 'Microsoft.Management.Infrastructure' '1.0.0' 'ref\netstandard1.6\Microsoft.Management.Infrastructure.dll' -nugetdir $nugetDir -nugeturl 'https://powershell.myget.org/F/powershell-core/api/v2')`""
+        "/r:`"$(GetNugetResource 'Microsoft.Management.Infrastructure' '1.0.0' 'ref\netstandard1.6\Microsoft.Management.Infrastructure.dll' -nugetdir $nugetDir)`""
+        "/r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref\netcoreapp2.1\System.Management.Automation.dll' -nugetdir $nugetDir)`""
         "/r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib\netstandard2.0\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
-        "/r:`"$(GetNugetResource 'System.Management.Automation' '6.2.0' 'ref\netcoreapp2.1\System.Management.Automation.dll' -nugetdir $nugetDir -nugeturl 'https://powershell.myget.org/F/powershell-core/api/v2')`""
         "/define:CORECLR"
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
