@@ -319,11 +319,11 @@ if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
     $moduleBaseDir, $modulePSv5Dir, $modulePSv4Dir, $modulePSv3Dir, $moduleCoreDir, $helpDir, $testdir, $nugetDir |
         foreach-object {new-item -itemtype directory $_ -force -confirm:$false | out-null}
 
-    copy-item "$RepoDir\Engine\PSScriptAnalyzer.ps[dm]1" $moduleBaseDir -confirm:$false
-    copy-item "$RepoDir\Engine\ScriptAnalyzer.*.ps1xml" $moduleBaseDir -confirm:$false
-    copy-item "$RepoDir\Engine\Settings" -recurse $moduleBaseDir -confirm:$false
-    copy-item "$RepoDir\docs\about*.txt" $helpDir -confirm:$false
-    copy-item "$RepoDir\PSCompatibilityAnalyzer\profiles" -recurse "$moduleBaseDir\compatibility_profiles" -confirm:$false
+    Copy-Item "$RepoDir/Engine/PSScriptAnalyzer.ps[dm]1" $moduleBaseDir -confirm:$false
+    Copy-Item "$RepoDir/Engine/ScriptAnalyzer.*.ps1xml" $moduleBaseDir -confirm:$false
+    Copy-Item "$RepoDir/Engine/Settings" -recurse $moduleBaseDir -confirm:$false
+    Copy-Item "$RepoDir/docs/about*.txt" $helpDir -confirm:$false
+    Copy-Item "$RepoDir/PSCompatibilityAnalyzer/profiles" -recurse "$moduleBaseDir/compatibility_profiles" -confirm:$false
 }
 
 
@@ -458,7 +458,7 @@ if ($PSVersion -contains '5') {
             throw "Could not create file: $rulesPSv5Dll"
         }
 
-        copy-item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
+        Copy-Item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
     }
 
 }
@@ -583,7 +583,7 @@ if ($PSVersion -contains '4') {
             throw "Could not create file: $rulesPSv4Dll"
         }
 
-        copy-item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv4Dir -confirm:$false
+        Copy-Item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv4Dir -confirm:$false
     }
 
 }
@@ -700,7 +700,7 @@ if ($PSVersion -contains '3') {
             throw "Could not create file: $rulesPSv3Dll"
         }
 
-        copy-item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv3Dir -confirm:$false
+        Copy-Item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv3Dir -confirm:$false
     }
 
 }
