@@ -72,31 +72,31 @@ param(
 $ErrorActionPreference = 'Stop'
 $isPSCoreProcess = ($null -ne $PSVersionTable.PSEdition) -and ('Desktop' -ne $PSVersionTable.PSEdition)
 
-$RepoDir = (get-item $RepoDir).FullName -replace '[\\/]$', ''
-$outputDir = "$RepoDir\out"
-$moduleBaseDir = "$RepoDir\out\PSScriptAnalyzer"
-$modulePSv5Dir = "$RepoDir\out\PSScriptAnalyzer"
-$modulePSv4Dir = "$RepoDir\out\PSScriptAnalyzer\PSv4"
-$modulePSv3Dir = "$RepoDir\out\PSScriptAnalyzer\PSv3"
-$moduleCoreDir = "$RepoDir\out\PSScriptAnalyzer\coreclr"
-$helpDir = "$RepoDir\out\PSScriptAnalyzer\en-US"
-$testDir = "$RepoDir\tmp\test"
-$testRunner = "$testDir\testRunner.ps1"
-$testResult = "$testDir\testResult.xml"
-$nugetDir = "$RepoDir\tmp\.nuget"
+$RepoDir = (Get-Item $RepoDir).FullName -replace '[\\/]$', ''
+$outputDir = [System.IO.Path]::Combine("$RepoDir", "out")
+$moduleBaseDir = [System.IO.Path]::Combine("$RepoDir", "out", "PSScriptAnalyzer")
+$modulePSv5Dir = [System.IO.Path]::Combine("$RepoDir", "out", "PSScriptAnalyzer")
+$modulePSv4Dir = [System.IO.Path]::Combine("$RepoDir", "out", "PSScriptAnalyzer", "PSv4")
+$modulePSv3Dir = [System.IO.Path]::Combine("$RepoDir", "out", "PSScriptAnalyzer", "PSv3")
+$moduleCoreDir = [System.IO.Path]::Combine("$RepoDir", "out", "PSScriptAnalyzer", "coreclr")
+$helpDir = [System.IO.Path]::Combine("$RepoDir", "out", "PSScriptAnalyzer", "en-US")
+$testDir = [System.IO.Path]::Combine("$RepoDir", "tmp", "test")
+$testRunner = [System.IO.Path]::Combine("$testDir", "testRunner.ps1")
+$testResult = [System.IO.Path]::Combine("$testDir", "testResult.xml")
+$nugetDir = [System.IO.Path]::Combine("$RepoDir", "tmp", ".nuget")
 
-$enginePSv5Dll = "$modulePSv5Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
-$enginePSv4Dll = "$modulePSv4Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
-$enginePSv3Dll = "$modulePSv3Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
-$engineCoreDll = "$moduleCoreDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.dll"
-$compatPSv5Dll = "$modulePSv5Dir\Microsoft.PowerShell.CrossCompatibility.dll"
-$compatPSv4Dll = "$modulePSv4Dir\Microsoft.PowerShell.CrossCompatibility.dll"
-$compatPSv3Dll = "$modulePSv3Dir\Microsoft.PowerShell.CrossCompatibility.dll"
-$compatCoreDll = "$moduleCoreDir\Microsoft.PowerShell.CrossCompatibility.dll"
-$rulesPSv5Dll = "$modulePSv5Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
-$rulesPSv4Dll = "$modulePSv4Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
-$rulesPSv3Dll = "$modulePSv3Dir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
-$rulesCoreDll = "$moduleCoreDir\Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll"
+$enginePSv5Dll = [System.IO.Path]::Combine("$modulePSv5Dir", "Microsoft.Windows.PowerShell.ScriptAnalyzer.dll")
+$enginePSv4Dll = [System.IO.Path]::Combine("$modulePSv4Dir", "Microsoft.Windows.PowerShell.ScriptAnalyzer.dll")
+$enginePSv3Dll = [System.IO.Path]::Combine("$modulePSv3Dir", "Microsoft.Windows.PowerShell.ScriptAnalyzer.dll")
+$engineCoreDll = [System.IO.Path]::Combine("$moduleCoreDir", "Microsoft.Windows.PowerShell.ScriptAnalyzer.dll")
+$compatPSv5Dll = [System.IO.Path]::Combine("$modulePSv5Dir", "Microsoft.PowerShell.CrossCompatibility.dll")
+$compatPSv4Dll = [System.IO.Path]::Combine("$modulePSv4Dir", "Microsoft.PowerShell.CrossCompatibility.dll")
+$compatPSv3Dll = [System.IO.Path]::Combine("$modulePSv3Dir", "Microsoft.PowerShell.CrossCompatibility.dll")
+$compatCoreDll = [System.IO.Path]::Combine("$moduleCoreDir", "Microsoft.PowerShell.CrossCompatibility.dll")
+$rulesPSv5Dll = [System.IO.Path]::Combine("$modulePSv5Dir", "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll")
+$rulesPSv4Dll = [System.IO.Path]::Combine("$modulePSv4Dir", "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll")
+$rulesPSv3Dll = [System.IO.Path]::Combine("$modulePSv3Dir", "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll")
+$rulesCoreDll = [System.IO.Path]::Combine("$moduleCoreDir", "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules.dll")
 
 
 
