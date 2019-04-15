@@ -337,7 +337,7 @@ elseif ($isPSCoreProcess) {
     throw "Must specify -CscExe with the file path to the C# compiler."
 }
 else {
-    $compiler = GetNugetResource 'microsoft.net.compilers.toolset' '3.1.0-beta1-final' 'tasks\net472\csc.exe' -nugetDir $nugetDir
+    $compiler = GetNugetResource 'microsoft.net.compilers.toolset' '3.1.0-beta1-final' 'tasks/net472/csc.exe' -nugetDir $nugetDir
 }
 
 write-verbose "$compiler" -verbose
@@ -380,7 +380,7 @@ if ($PSVersion -contains '5') {
         "-r:`"$DotNet45Dir\System.dll`""
         "-r:`"$DotNet45Dir\System.Core.dll`""
         "-r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib\net461\System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -nugetDir $nugetDir)`""
         dir "$RepoDir\Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
@@ -411,8 +411,8 @@ if ($PSVersion -contains '5') {
         "-r:`"$DotNet45Dir\System.dll`""
         "-r:`"$DotNet45Dir\System.Core.dll`""
         "-r:`"$DotNet45Dir\System.Runtime.Serialization.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib\net461\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         "-recurse:`"$RepoDir\PSCompatibilityAnalyzer\Microsoft.PowerShell.CrossCompatibility\*.cs`""
     }
 
@@ -443,9 +443,9 @@ if ($PSVersion -contains '5') {
         "-r:`"$DotNet45Dir\System.Core.dll`""
         "-r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
         "-r:`"$DotNet45Dir\System.Data.Entity.Design.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib\net461\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib\net461\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
@@ -494,7 +494,7 @@ if ($PSVersion -contains '4') {
         "-r:`"$DotNet45Dir\System.dll`""
         "-r:`"$DotNet45Dir\System.Core.dll`""
         "-r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
 
         #For now, needs PSV3 defined to build.
         "-define:PSV3;PSV4"
@@ -529,8 +529,8 @@ if ($PSVersion -contains '4') {
         "-r:`"$DotNet45Dir\System.dll`""
         "-r:`"$DotNet45Dir\System.Core.dll`""
         "-r:`"$DotNet45Dir\System.Runtime.Serialization.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         "-recurse:`"$RepoDir\PSCompatibilityAnalyzer\Microsoft.PowerShell.CrossCompatibility\*.cs`""
 
         #For now, needs PSV3 defined to build.
@@ -564,9 +564,9 @@ if ($PSVersion -contains '4') {
         "-r:`"$DotNet45Dir\System.Core.dll`""
         "-r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
         "-r:`"$DotNet45Dir\System.Data.Entity.Design.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
 
         #For now, needs PSV3 defined to build.
         "-define:PSV3;PSV4"
@@ -619,7 +619,7 @@ if ($PSVersion -contains '3') {
         "-r:`"$DotNet4Dir\System.dll`""
         "-r:`"$DotNet4Dir\System.Core.dll`""
         "-r:`"$DotNet4Dir\System.ComponentModel.Composition.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
         "-define:PSV3"
         dir "$RepoDir\Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
@@ -651,8 +651,8 @@ if ($PSVersion -contains '3') {
         "-r:`"$DotNet4Dir\System.dll`""
         "-r:`"$DotNet4Dir\System.Core.dll`""
         "-r:`"$DotNet4Dir\System.Runtime.Serialization.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         "-recurse:`"$RepoDir\PSCompatibilityAnalyzer\Microsoft.PowerShell.CrossCompatibility\*.cs`""
         "-define:PSV3"
     }
@@ -684,9 +684,9 @@ if ($PSVersion -contains '3') {
         "-r:`"$DotNet4Dir\System.Core.dll`""
         "-r:`"$DotNet4Dir\System.ComponentModel.Composition.dll`""
         "-r:`"$DotNet4Dir\System.Data.Entity.Design.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib\net4\System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib\net45\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         "-define:PSV3"
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
@@ -721,22 +721,22 @@ if ($PSVersion -contains 'Core') {
         "-warn:$WarnLevel"
         "-nowarn:1701;1702"
         "-optimize$(if ($Optimize) {'+'} else {'-'})"
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\netstandard.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\Microsoft.CSharp.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Collections.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Collections.Concurrent.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Console.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Diagnostics.Debug.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Diagnostics.Tools.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.IO.FileSystem.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Linq.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Linq.Expressions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Resources.ResourceManager.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.Extensions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Text.RegularExpressions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Threading.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref\netcoreapp2.1\System.Management.Automation.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/netstandard.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/Microsoft.CSharp.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.Concurrent.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Console.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Debug.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Tools.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.IO.FileSystem.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.Expressions.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Resources.ResourceManager.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Extensions.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Text.RegularExpressions.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Threading.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -nugetdir $nugetDir)`""
         "-define:CORECLR"
         dir "$RepoDir\Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
@@ -764,20 +764,20 @@ if ($PSVersion -contains 'Core') {
         "-platform:$Platform"
         "-warn:$WarnLevel"
         "-optimize$(if ($Optimize) {'+'} else {'-'})"
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\netstandard.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\Microsoft.CSharp.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Collections.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Collections.Concurrent.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.IO.FileSystem.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Linq.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Linq.Expressions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.Extensions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.InteropServices.RuntimeInformation.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.Serialization.Primitives.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Threading.Tasks.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref\netcoreapp2.1\System.Management.Automation.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib\netstandard2.0\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/netstandard.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/Microsoft.CSharp.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.Concurrent.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.IO.FileSystem.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.Expressions.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Extensions.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.InteropServices.RuntimeInformation.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Serialization.Primitives.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Threading.Tasks.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib/netstandard2.0/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         "-recurse:`"$RepoDir\PSCompatibilityAnalyzer\Microsoft.PowerShell.CrossCompatibility\*.cs`""
         "-define:CORECLR"
     }
@@ -804,23 +804,23 @@ if ($PSVersion -contains 'Core') {
         "-optimize$(if ($Optimize) {'+'} else {'-'})"
         "-r:`"$engineCoreDll`""
         "-r:`"$compatCoreDll`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\netstandard.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\Microsoft.CSharp.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Collections.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Collections.Specialized.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Diagnostics.Debug.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Diagnostics.Tools.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.IO.FileSystem.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Linq.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Linq.Expressions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Reflection.TypeExtensions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.Extensions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Runtime.InteropServices.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref\netcoreapp2.1\System.Text.RegularExpressions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.Management.Infrastructure' '1.0.0' 'ref\netstandard1.6\Microsoft.Management.Infrastructure.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref\netcoreapp2.1\System.Management.Automation.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib\netstandard2.0\Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/netstandard.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/Microsoft.CSharp.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.Specialized.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Debug.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Tools.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.IO.FileSystem.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.Expressions.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Reflection.TypeExtensions.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Extensions.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.InteropServices.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Text.RegularExpressions.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.Management.Infrastructure' '1.0.0' 'ref/netstandard1.6/Microsoft.Management.Infrastructure.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib/netstandard2.0/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         "-define:CORECLR"
         dir "$RepoDir\Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
