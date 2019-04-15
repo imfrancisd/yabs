@@ -346,8 +346,8 @@ write-verbose "$compiler" -verbose
 
 write-verbose 'Generate string resources.' -verbose
 
-write-verbose "$(ConvertResxStringsToCsharp "$RepoDir\Engine\Strings.resx" "$RepoDir\Engine\gen\Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")"
-write-verbose "$(ConvertResxStringsToCsharp "$RepoDir\Rules\Strings.resx" "$RepoDir\Rules\gen\Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")"
+write-verbose "$(ConvertResxStringsToCsharp "$RepoDir/Engine/Strings.resx" "$RepoDir/Engine/gen/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")"
+write-verbose "$(ConvertResxStringsToCsharp "$RepoDir/Rules/Strings.resx" "$RepoDir/Rules/gen/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")"
 
 
 
