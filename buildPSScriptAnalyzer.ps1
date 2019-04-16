@@ -383,8 +383,8 @@ if ($PSVersion -contains '5') {
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -nugetDir $nugetDir)`""
         Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
-            where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
+            where-object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            where-object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create file')) {
@@ -448,7 +448,7 @@ if ($PSVersion -contains '5') {
         "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
+            where-object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv5Dll, 'Create file')) {
@@ -501,8 +501,8 @@ if ($PSVersion -contains '4') {
 
         Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
-            where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
+            where-object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            where-object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv4Dll, 'Create file')) {
@@ -573,7 +573,7 @@ if ($PSVersion -contains '4') {
 
         Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
+            where-object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv4Dll, 'Create file')) {
@@ -623,8 +623,8 @@ if ($PSVersion -contains '3') {
         "-define:PSV3"
         Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
-            where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
+            where-object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            where-object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create file')) {
@@ -690,7 +690,7 @@ if ($PSVersion -contains '3') {
         "-define:PSV3"
         Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
+            where-object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv3Dll, 'Create file')) {
@@ -740,9 +740,9 @@ if ($PSVersion -contains 'Core') {
         "-define:CORECLR"
         Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir\Engine\SafeDirectoryCatalog.cs"} |
-            where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
-            where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
+            where-object {$_ -ne "$RepoDir/Engine/SafeDirectoryCatalog.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            where-object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            where-object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($PSCmdlet.ShouldProcess($engineCoreDll, 'Create file')) {
@@ -824,8 +824,8 @@ if ($PSVersion -contains 'Core') {
         "-define:CORECLR"
         Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir\Rules\UseSingularNouns.cs"} |
-            where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
+            where-object {$_ -ne "$RepoDir/Rules/UseSingularNouns.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            where-object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($pscmdlet.ShouldProcess($rulesCoreDll, 'Create file')) {
