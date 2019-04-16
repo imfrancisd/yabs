@@ -844,7 +844,7 @@ write-verbose 'Generate PSScriptAnalyzer Module help files.' -verbose
 
 if ($PSCmdlet.ShouldProcess($helpDir, 'Create PSScriptAnalyzer Module Help Directory')) {
     if ((get-module platyps) -or (get-module platyps -list)) {
-        platyps\New-ExternalHelp -path $RepoDir\docs\markdown -outputpath $helpDir -force | out-null
+        platyPS\New-ExternalHelp -path "$RepoDir/docs/markdown" -outputpath $helpDir -force | out-null
     }
     else {
         write-warning "TODO: build module help file with platyps" -warningaction continue
@@ -868,7 +868,7 @@ if ($PSCmdlet.ShouldProcess($testRunner, 'Create script that runs tests')) {
     `$env:PSModulePath = "$outputDir$([System.IO.Path]::PathSeparator)`$(`$env:PSModulePath)"
     Import-Module 'PSScriptAnalyzer' -Verbose
 
-    Pester\Invoke-Pester -Script @('$RepoDir\Tests\Engine', '$RepoDir\Tests\Rules', '$RepoDir\Tests\Documentation') -OutputFile '$testResult' -OutputFormat NUnitXml
+    Pester\Invoke-Pester -Script @('$RepoDir/Tests/Engine', '$RepoDir/Tests/Rules', '$RepoDir/Tests/Documentation') -OutputFile '$testResult' -OutputFormat NUnitXml
 
     if (Test-Path '$testResult') {
         Get-Item '$testResult'
