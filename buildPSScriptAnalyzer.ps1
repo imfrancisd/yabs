@@ -902,6 +902,6 @@ if ($PSCmdlet.ShouldProcess($testRunner, 'Run script that runs tests')) {
 
 
 
-if ((-not $WhatIfPreference) -and (test-path "$moduleBaseDir\*.psd1")) {
+if ((-not $WhatIfPreference) -and (Test-Path "$moduleBaseDir/*.psd1")) {
     get-item "$moduleBaseDir"
 }
