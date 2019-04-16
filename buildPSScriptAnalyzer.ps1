@@ -381,7 +381,7 @@ if ($PSVersion -contains '5') {
         "-r:`"$DotNet45Dir\System.Core.dll`""
         "-r:`"$DotNet45Dir\System.ComponentModel.Composition.dll`""
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        dir "$RepoDir\Engine" -filter *.cs -recurse |
+        Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
             where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
@@ -446,7 +446,7 @@ if ($PSVersion -contains '5') {
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -nugetDir $nugetDir)`""
         "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
-        dir "$RepoDir\Rules" -filter *.cs -recurse |
+        Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
     }
@@ -499,7 +499,7 @@ if ($PSVersion -contains '4') {
         #For now, needs PSV3 defined to build.
         "-define:PSV3;PSV4"
 
-        dir "$RepoDir\Engine" -filter *.cs -recurse |
+        Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
             where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
@@ -571,7 +571,7 @@ if ($PSVersion -contains '4') {
         #For now, needs PSV3 defined to build.
         "-define:PSV3;PSV4"
 
-        dir "$RepoDir\Rules" -filter *.cs -recurse |
+        Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
     }
@@ -621,7 +621,7 @@ if ($PSVersion -contains '3') {
         "-r:`"$DotNet4Dir\System.ComponentModel.Composition.dll`""
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
         "-define:PSV3"
-        dir "$RepoDir\Engine" -filter *.cs -recurse |
+        Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
             where-object {$_ -ne "$RepoDir\Engine\Strings.Designer.cs"}
@@ -688,7 +688,7 @@ if ($PSVersion -contains '3') {
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
         "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         "-define:PSV3"
-        dir "$RepoDir\Rules" -filter *.cs -recurse |
+        Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
     }
@@ -738,7 +738,7 @@ if ($PSVersion -contains 'Core') {
         "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Threading.dll' -nugetdir $nugetDir)`""
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -nugetdir $nugetDir)`""
         "-define:CORECLR"
-        dir "$RepoDir\Engine" -filter *.cs -recurse |
+        Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Engine\SafeDirectoryCatalog.cs"} |
             where-object {$_ -ne "$RepoDir\Engine\Commands\GetScriptAnalyzerLoggerCommand.cs"} |
@@ -822,7 +822,7 @@ if ($PSVersion -contains 'Core') {
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -nugetdir $nugetDir)`""
         "-r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib/netstandard2.0/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
         "-define:CORECLR"
-        dir "$RepoDir\Rules" -filter *.cs -recurse |
+        Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
             select-object -expandproperty fullname |
             where-object {$_ -ne "$RepoDir\Rules\UseSingularNouns.cs"} |
             where-object {$_ -ne "$RepoDir\Rules\Strings.Designer.cs"}
