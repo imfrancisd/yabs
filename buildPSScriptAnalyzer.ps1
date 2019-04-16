@@ -5,7 +5,7 @@
 Yet another build script for PSScriptAnalyzer (https://github.com/PowerShell/PSScriptAnalyzer) without Visual Studio or .Net Core.
 .Description
 ==================
-Updated 2019-04-15
+Updated 2019-04-16
 ==================
 
 Build PSScriptAnalyzer project (https://github.com/PowerShell/PSScriptAnalyzer) on a Windows 10 computer and PowerShell 5 (no Visual Studio or .Net Core).
@@ -132,16 +132,16 @@ function GetNugetResource {
     $packageZip = [System.IO.Path]::Combine($NugetDir, 'packages', $PackageName, "$PackageVersion.zip")
     $resourcePath = [System.IO.Path]::Combine($packageDir, $RelativePath)
 
-    if ((-not (test-path $resourcePath)) -and $PSCmdlet.ShouldProcess($packageUrl, 'Download nuget package')) {
-        New-Item $packageDir -ItemType Directory -Force -Confirm:$false | out-null
-        invoke-webrequest $packageUrl -outfile $packageZip -verbose
-        if (test-path $packageZip) {
-            expand-archive $packageZip -destinationpath $packageDir -force
-            remove-item $packageZip -confirm:$false
+    if ((-not (Test-Path $resourcePath)) -and $PSCmdlet.ShouldProcess($packageUrl, 'Download nuget package')) {
+        New-Item $packageDir -ItemType Directory -Force -Confirm:$false | Out-Null
+        Invoke-WebRequest $packageUrl -OutFile $packageZip -Verbose
+        if (Test-Path $packageZip) {
+            Expand-Archive $packageZip -DestinationPath $packageDir -Force
+            Remove-Item $packageZip -Confirm:$false
         }
     }
 
-    if ((-not $WhatIfPreference) -and (-not (test-path $resourcePath))) {
+    if ((-not $WhatIfPreference) -and (-not (Test-Path $resourcePath))) {
         throw "Could not find nuget resource: $resourcePath"
     }
 
@@ -183,7 +183,7 @@ function ConvertResxStringsToCsharp {
             throw "Path must be a file path or a hashtable."
         }
 
-        New-Item (split-path $Destination -parent) -ItemType Directory -Force | out-null
+        New-Item (Split-Path $Destination -Parent) -ItemType Directory -Force | Out-Null
 
         &{
             "using System;"
@@ -250,7 +250,7 @@ function ConvertResxStringsToCsharp {
 
             foreach ($entry in $Path.GetEnumerator()) {
                 $culture = [System.Globalization.CultureInfo]::new("$($entry.Key)")
-                $xmlData = [xml](get-content $entry.Value)
+                $xmlData = [xml](Get-Content $entry.Value)
                 $resourceContents.Add($culture, @{})
 
                 foreach ($item in $xmlData.GetElementsByTagName('data').GetEnumerator()) {
@@ -271,7 +271,7 @@ function ConvertResxStringsToCsharp {
             "        {"
             "            s_localizedResources = new Dictionary<CultureInfo, Lazy<string[]>>() {"
 
-            foreach ($cultureData in @($resourceContents.GetEnumerator() | sort-object {$_.Key})) {
+            foreach ($cultureData in @($resourceContents.GetEnumerator() | Sort-Object {$_.Key})) {
                 $culture = $cultureData.Key
                 $data = $cultureData.Value
                 "                {new CultureInfo(`"$($culture)`"), new Lazy<string[]>(() => new string[] {"
@@ -297,10 +297,10 @@ function ConvertResxStringsToCsharp {
             "        }"
             "    }"
             "}"
-        } | out-file $Destination -encoding utf8 -force
+        } | Out-File $Destination -Encoding utf8 -Force
     }
 
-    if ((-not $WhatIfPreference) -and (-not (test-path $Destination))) {
+    if ((-not $WhatIfPreference) -and (-not (Test-Path $Destination))) {
         throw "Could not create file: $Destination"
     }
 
@@ -309,62 +309,62 @@ function ConvertResxStringsToCsharp {
 
 
 
-write-verbose 'Create output directory structure.' -verbose
+Write-Verbose 'Create output directory structure.' -Verbose
 
 if ($PSCmdlet.ShouldProcess($outputDir, 'Create directory structure')) {
     $moduleBaseDir, $modulePSv5Dir, $modulePSv4Dir, $modulePSv3Dir, $moduleCoreDir, $helpDir, $testDir |
-        where-object {test-path $_} |
-        foreach-object {remove-item $_ -recurse -force -confirm:$false}
+        Where-Object {Test-Path $_} |
+        ForEach-Object {Remove-Item $_ -Recurse -Force -Confirm:$false}
 
     $moduleBaseDir, $modulePSv5Dir, $modulePSv4Dir, $modulePSv3Dir, $moduleCoreDir, $helpDir, $testdir, $nugetDir |
-        foreach-object {new-item -itemtype directory $_ -force -confirm:$false | out-null}
+        ForEach-Object {New-Item -ItemType Directory $_ -Force -Confirm:$false | Out-Null}
 
-    Copy-Item "$RepoDir/Engine/PSScriptAnalyzer.ps[dm]1" $moduleBaseDir -confirm:$false
-    Copy-Item "$RepoDir/Engine/ScriptAnalyzer.*.ps1xml" $moduleBaseDir -confirm:$false
-    Copy-Item "$RepoDir/Engine/Settings" -recurse $moduleBaseDir -confirm:$false
-    Copy-Item "$RepoDir/docs/about*.txt" $helpDir -confirm:$false
-    Copy-Item "$RepoDir/PSCompatibilityAnalyzer/profiles" -recurse "$moduleBaseDir/compatibility_profiles" -confirm:$false
+    Copy-Item "$RepoDir/Engine/PSScriptAnalyzer.ps[dm]1" $moduleBaseDir -Confirm:$false
+    Copy-Item "$RepoDir/Engine/ScriptAnalyzer.*.ps1xml" $moduleBaseDir -Confirm:$false
+    Copy-Item "$RepoDir/Engine/Settings" -Recurse $moduleBaseDir -Confirm:$false
+    Copy-Item "$RepoDir/docs/about*.txt" $helpDir -Confirm:$false
+    Copy-Item "$RepoDir/PSCompatibilityAnalyzer/profiles" -Recurse "$moduleBaseDir/compatibility_profiles" -Confirm:$false
 }
 
 
 
-write-verbose 'Get C# compiler.' -verbose
+Write-Verbose 'Get C# compiler.' -Verbose
 
-if (-not [string]::IsNullOrWhiteSpace($CscExe) -and (test-path $CscExe)) {
+if (-not [string]::IsNullOrWhiteSpace($CscExe) -and (Test-Path $CscExe)) {
     $compiler = $CscExe
 }
 elseif ($isPSCoreProcess) {
     throw "Must specify -CscExe with the file path to the C# compiler."
 }
 else {
-    $compiler = GetNugetResource 'microsoft.net.compilers.toolset' '3.1.0-beta1-final' 'tasks/net472/csc.exe' -nugetDir $nugetDir
+    $compiler = GetNugetResource 'Microsoft.Net.Compilers.Toolset' '3.1.0-beta1-final' 'tasks/net472/csc.exe' -NugetDir $nugetDir
 }
 
-write-verbose "$compiler" -verbose
+Write-Verbose "$compiler" -Verbose
 
 
 
-write-verbose 'Generate string resources.' -verbose
+Write-Verbose 'Generate string resources.' -Verbose
 
-write-verbose "$(ConvertResxStringsToCsharp "$RepoDir/Engine/Strings.resx" "$RepoDir/Engine/gen/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")"
-write-verbose "$(ConvertResxStringsToCsharp "$RepoDir/Rules/Strings.resx" "$RepoDir/Rules/gen/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")"
+Write-Verbose "$(ConvertResxStringsToCsharp "$RepoDir/Engine/Strings.resx" "$RepoDir/Engine/gen/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")"
+Write-Verbose "$(ConvertResxStringsToCsharp "$RepoDir/Rules/Strings.resx" "$RepoDir/Rules/gen/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")"
 
 
 
 if ($PSVersion -contains '5') {
 
-    write-verbose 'Build PSv5 script analyzer engine.' -verbose
+    Write-Verbose 'Build PSv5 script analyzer engine.' -Verbose
 
     if (-not $PSBoundParameters.ContainsKey('DotNet45Dir')) {
         if ($isPSCoreProcess) {
             throw "Must specify .NET 4.5 reference assemblies."
         }
         else {
-            write-warning '*** Using unknown .NET framework in place of .NET 4.5. Specify -DotNet45Dir. ***'
+            Write-Warning '*** Using unknown .NET framework in place of .NET 4.5. Specify -DotNet45Dir. ***'
             $DotNet45Dir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
         }
     }
-    $DotNet45Dir = (get-item $DotNet45Dir).FullName -replace '[\\/]$', ''
+    $DotNet45Dir = (Get-Item $DotNet45Dir).FullName -replace '[\\/]$', ''
 
     $compilerArgs = & {
         "-nologo"
@@ -380,22 +380,22 @@ if ($PSVersion -contains '5') {
         "-r:`"$DotNet45Dir/System.dll`""
         "-r:`"$DotNet45Dir/System.Core.dll`""
         "-r:`"$DotNet45Dir/System.ComponentModel.Composition.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
-            select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
-            where-object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -NugetDir $nugetDir)`""
+        Get-ChildItem "$RepoDir/Engine" -Filter *.cs -Recurse |
+            Select-Object -ExpandProperty FullName |
+            Where-Object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            Where-Object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $enginePSv5Dll)) {
+        if (-not (Test-Path $enginePSv5Dll)) {
             throw "Could not create file: $enginePSv5Dll"
         }
     }
 
-    write-verbose 'Build PSv5 script analyzer cross compatibility.' -verbose
+    Write-Verbose 'Build PSv5 script analyzer cross compatibility.' -Verbose
 
     $compilerArgs = & {
         "-nologo"
@@ -411,20 +411,20 @@ if ($PSVersion -contains '5') {
         "-r:`"$DotNet45Dir/System.dll`""
         "-r:`"$DotNet45Dir/System.Core.dll`""
         "-r:`"$DotNet45Dir/System.Runtime.Serialization.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -NugetDir $nugetDir)`""
         "-recurse:`"$RepoDir/PSCompatibilityAnalyzer/Microsoft.PowerShell.CrossCompatibility/*.cs`""
     }
 
     if ($PSCmdlet.ShouldProcess($compatPSv5Dll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $compatPSv5Dll)) {
+        if (-not (Test-Path $compatPSv5Dll)) {
             throw "Could not create file: $compatPSv5Dll"
         }
     }
 
-    write-verbose 'Build PSv5 script analyzer rules.' -verbose
+    Write-Verbose 'Build PSv5 script analyzer rules.' -Verbose
 
     $compilerArgs = & {
         "-nologo"
@@ -443,22 +443,22 @@ if ($PSVersion -contains '5') {
         "-r:`"$DotNet45Dir/System.Core.dll`""
         "-r:`"$DotNet45Dir/System.ComponentModel.Composition.dll`""
         "-r:`"$DotNet45Dir/System.Data.Entity.Design.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
-        Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
-            select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/Microsoft.Management.Infrastructure.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -NugetDir $nugetDir)`""
+        Get-ChildItem "$RepoDir/Rules" -Filter *.cs -Recurse |
+            Select-Object -ExpandProperty FullName |
+            Where-Object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv5Dll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $rulesPSv5Dll)) {
+        if (-not (Test-Path $rulesPSv5Dll)) {
             throw "Could not create file: $rulesPSv5Dll"
         }
 
-        Copy-Item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv5Dir -confirm:$false
+        Copy-Item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -NugetDir $nugetDir) $modulePSv5Dir -Confirm:$false
     }
 
 }
@@ -467,18 +467,18 @@ if ($PSVersion -contains '5') {
 
 if ($PSVersion -contains '4') {
 
-    write-verbose 'Build PSv4 script analyzer engine.' -verbose
+    Write-Verbose 'Build PSv4 script analyzer engine.' -Verbose
 
     if (-not $PSBoundParameters.ContainsKey('DotNet45Dir')) {
         if ($isPSCoreProcess) {
             throw "Must specify .NET 4.5 reference assemblies."
         }
         else {
-            write-warning '*** Using unknown .NET framework in place of .NET 4.5. Specify -DotNet45Dir. ***'
+            Write-Warning '*** Using unknown .NET framework in place of .NET 4.5. Specify -DotNet45Dir. ***'
             $DotNet45Dir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
         }
     }
-    $DotNet45Dir = (get-item $DotNet45Dir).FullName -replace '[\\/]$', ''
+    $DotNet45Dir = (Get-Item $DotNet45Dir).FullName -replace '[\\/]$', ''
 
     $compilerArgs = & {
         "-nologo"
@@ -494,26 +494,26 @@ if ($PSVersion -contains '4') {
         "-r:`"$DotNet45Dir/System.dll`""
         "-r:`"$DotNet45Dir/System.Core.dll`""
         "-r:`"$DotNet45Dir/System.ComponentModel.Composition.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -NugetDir $nugetDir)`""
 
         #For now, needs PSV3 defined to build.
         "-define:PSV3;PSV4"
 
-        Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
-            select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
-            where-object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+        Get-ChildItem "$RepoDir/Engine" -Filter *.cs -Recurse |
+            Select-Object -ExpandProperty FullName |
+            Where-Object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            Where-Object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv4Dll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $enginePSv4Dll)) {
+        if (-not (Test-Path $enginePSv4Dll)) {
             throw "Could not create file: $enginePSv4Dll"
         }
     }
 
-    write-verbose 'Build PSv4 script analyzer cross compatibility.' -verbose
+    Write-Verbose 'Build PSv4 script analyzer cross compatibility.' -Verbose
 
     $compilerArgs = & {
         "-nologo"
@@ -529,8 +529,8 @@ if ($PSVersion -contains '4') {
         "-r:`"$DotNet45Dir/System.dll`""
         "-r:`"$DotNet45Dir/System.Core.dll`""
         "-r:`"$DotNet45Dir/System.Runtime.Serialization.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -NugetDir $nugetDir)`""
         "-recurse:`"$RepoDir/PSCompatibilityAnalyzer/Microsoft.PowerShell.CrossCompatibility/*.cs`""
 
         #For now, needs PSV3 defined to build.
@@ -540,12 +540,12 @@ if ($PSVersion -contains '4') {
     if ($PSCmdlet.ShouldProcess($compatPSv4Dll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $compatPSv4Dll)) {
+        if (-not (Test-Path $compatPSv4Dll)) {
             throw "Could not create file: $compatPSv4Dll"
         }
     }
 
-    write-verbose 'Build PSv4 script analyzer rules.' -verbose
+    Write-Verbose 'Build PSv4 script analyzer rules.' -Verbose
 
     $compilerArgs = & {
         "-nologo"
@@ -564,26 +564,26 @@ if ($PSVersion -contains '4') {
         "-r:`"$DotNet45Dir/System.Core.dll`""
         "-r:`"$DotNet45Dir/System.ComponentModel.Composition.dll`""
         "-r:`"$DotNet45Dir/System.Data.Entity.Design.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/Microsoft.Management.Infrastructure.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.4.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -NugetDir $nugetDir)`""
 
         #For now, needs PSV3 defined to build.
         "-define:PSV3;PSV4"
 
-        Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
-            select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+        Get-ChildItem "$RepoDir/Rules" -Filter *.cs -Recurse |
+            Select-Object -ExpandProperty FullName |
+            Where-Object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv4Dll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $rulesPSv4Dll)) {
+        if (-not (Test-Path $rulesPSv4Dll)) {
             throw "Could not create file: $rulesPSv4Dll"
         }
 
-        Copy-Item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv4Dir -confirm:$false
+        Copy-Item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -NugetDir $nugetDir) $modulePSv4Dir -Confirm:$false
     }
 
 }
@@ -592,18 +592,18 @@ if ($PSVersion -contains '4') {
 
 if ($PSVersion -contains '3') {
 
-    write-verbose 'Build PSv3 script analyzer engine.' -verbose
+    Write-Verbose 'Build PSv3 script analyzer engine.' -Verbose
 
     if (-not $PSBoundParameters.ContainsKey('DotNet4Dir')) {
         if ($isPSCoreProcess) {
             throw "Must specify .NET 4.0 reference assemblies."
         }
         else {
-            write-warning '*** Using unknown .NET framework in place of .NET 4.0. Specify -DotNet4Dir. ***'
+            Write-Warning '*** Using unknown .NET framework in place of .NET 4.0. Specify -DotNet4Dir. ***'
             $DotNet4Dir = [System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
         }
     }
-    $DotNet4Dir = (get-item $DotNet4Dir).FullName -replace '[\\/]$', ''
+    $DotNet4Dir = (Get-Item $DotNet4Dir).FullName -replace '[\\/]$', ''
 
     $compilerArgs = & {
         "-nologo"
@@ -619,23 +619,23 @@ if ($PSVersion -contains '3') {
         "-r:`"$DotNet4Dir/System.dll`""
         "-r:`"$DotNet4Dir/System.Core.dll`""
         "-r:`"$DotNet4Dir/System.ComponentModel.Composition.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -NugetDir $nugetDir)`""
         "-define:PSV3"
-        Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
-            select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
-            where-object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+        Get-ChildItem "$RepoDir/Engine" -Filter *.cs -Recurse |
+            Select-Object -ExpandProperty FullName |
+            Where-Object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            Where-Object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $enginePSv3Dll)) {
+        if (-not (Test-Path $enginePSv3Dll)) {
             throw "Could not create file: $enginePSv3Dll"
         }
     }
 
-    write-verbose 'Build PSv3 script analyzer cross compatibility.' -verbose
+    Write-Verbose 'Build PSv3 script analyzer cross compatibility.' -Verbose
 
     $compilerArgs = & {
         "-nologo"
@@ -651,8 +651,8 @@ if ($PSVersion -contains '3') {
         "-r:`"$DotNet4Dir/System.dll`""
         "-r:`"$DotNet4Dir/System.Core.dll`""
         "-r:`"$DotNet4Dir/System.Runtime.Serialization.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -NugetDir $nugetDir)`""
         "-recurse:`"$RepoDir/PSCompatibilityAnalyzer/Microsoft.PowerShell.CrossCompatibility/*.cs`""
         "-define:PSV3"
     }
@@ -660,12 +660,12 @@ if ($PSVersion -contains '3') {
     if ($PSCmdlet.ShouldProcess($compatPSv3Dll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $compatPSv3Dll)) {
+        if (-not (Test-Path $compatPSv3Dll)) {
             throw "Could not create file: $compatPSv3Dll"
         }
     }
 
-    write-verbose 'Build PSv3 script analyzer rules.' -verbose
+    Write-Verbose 'Build PSv3 script analyzer rules.' -Verbose
 
     $compilerArgs = & {
         "-nologo"
@@ -684,23 +684,23 @@ if ($PSVersion -contains '3') {
         "-r:`"$DotNet4Dir/System.Core.dll`""
         "-r:`"$DotNet4Dir/System.ComponentModel.Composition.dll`""
         "-r:`"$DotNet4Dir/System.Data.Entity.Design.dll`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/Microsoft.Management.Infrastructure.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -nugetDir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/Microsoft.Management.Infrastructure.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -NugetDir $nugetDir)`""
         "-define:PSV3"
-        Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
-            select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+        Get-ChildItem "$RepoDir/Rules" -Filter *.cs -Recurse |
+            Select-Object -ExpandProperty FullName |
+            Where-Object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv3Dll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $rulesPSv3Dll)) {
+        if (-not (Test-Path $rulesPSv3Dll)) {
             throw "Could not create file: $rulesPSv3Dll"
         }
 
-        Copy-Item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -nugetDir $nugetDir) $modulePSv3Dir -confirm:$false
+        Copy-Item $(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -NugetDir $nugetDir) $modulePSv3Dir -Confirm:$false
     }
 
 }
@@ -709,7 +709,7 @@ if ($PSVersion -contains '3') {
 
 if ($PSVersion -contains 'Core') {
 
-    write-verbose 'Build PSCore script analyzer engine.' -verbose
+    Write-Verbose 'Build PSCore script analyzer engine.' -Verbose
 
     $compilerArgs = & {
         "-nologo"
@@ -721,39 +721,39 @@ if ($PSVersion -contains 'Core') {
         "-warn:$WarnLevel"
         "-nowarn:1701;1702"
         "-optimize$(if ($Optimize) {'+'} else {'-'})"
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/netstandard.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/Microsoft.CSharp.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.Concurrent.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Console.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Debug.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Tools.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.IO.FileSystem.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.Expressions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Resources.ResourceManager.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Extensions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Text.RegularExpressions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Threading.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -nugetdir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/netstandard.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/Microsoft.CSharp.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.Concurrent.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Console.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Debug.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Tools.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.IO.FileSystem.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.Expressions.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Resources.ResourceManager.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Extensions.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Text.RegularExpressions.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Threading.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -NugetDir $nugetDir)`""
         "-define:CORECLR"
-        Get-ChildItem "$RepoDir/Engine" -filter *.cs -recurse |
-            select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir/Engine/SafeDirectoryCatalog.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
-            where-object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
-            where-object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+        Get-ChildItem "$RepoDir/Engine" -Filter *.cs -Recurse |
+            Select-Object -ExpandProperty FullName |
+            Where-Object {$_ -ne "$RepoDir/Engine/SafeDirectoryCatalog.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            Where-Object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            Where-Object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($PSCmdlet.ShouldProcess($engineCoreDll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $engineCoreDll)) {
+        if (-not (Test-Path $engineCoreDll)) {
             throw "Could not create file: $engineCoreDll"
         }
     }
 
-    write-verbose 'Build PSCore script analyzer cross compatibility.' -verbose
+    Write-Verbose 'Build PSCore script analyzer cross compatibility.' -Verbose
 
     $compilerArgs = & {
         "-nologo"
@@ -764,20 +764,20 @@ if ($PSVersion -contains 'Core') {
         "-platform:$Platform"
         "-warn:$WarnLevel"
         "-optimize$(if ($Optimize) {'+'} else {'-'})"
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/netstandard.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/Microsoft.CSharp.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.Concurrent.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.IO.FileSystem.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.Expressions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Extensions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.InteropServices.RuntimeInformation.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Serialization.Primitives.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Threading.Tasks.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib/netstandard2.0/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/netstandard.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/Microsoft.CSharp.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.Concurrent.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.IO.FileSystem.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.Expressions.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Extensions.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.InteropServices.RuntimeInformation.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Serialization.Primitives.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Threading.Tasks.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib/netstandard2.0/Newtonsoft.Json.dll' -NugetDir $nugetDir)`""
         "-recurse:`"$RepoDir/PSCompatibilityAnalyzer/Microsoft.PowerShell.CrossCompatibility/*.cs`""
         "-define:CORECLR"
     }
@@ -785,12 +785,12 @@ if ($PSVersion -contains 'Core') {
     if ($PSCmdlet.ShouldProcess($compatCoreDll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $compatCoreDll)) {
+        if (-not (Test-Path $compatCoreDll)) {
             throw "Could not create file: $compatCoreDll"
         }
     }
 
-    write-verbose 'Build PSCore script analyzer rules.' -verbose
+    Write-Verbose 'Build PSCore script analyzer rules.' -Verbose
 
     $compilerArgs = & {
         "-nologo"
@@ -804,34 +804,34 @@ if ($PSVersion -contains 'Core') {
         "-optimize$(if ($Optimize) {'+'} else {'-'})"
         "-r:`"$engineCoreDll`""
         "-r:`"$compatCoreDll`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/netstandard.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/Microsoft.CSharp.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.Specialized.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Debug.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Tools.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.IO.FileSystem.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.Expressions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Reflection.TypeExtensions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Extensions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.InteropServices.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Text.RegularExpressions.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.Management.Infrastructure' '1.0.0' 'ref/netstandard1.6/Microsoft.Management.Infrastructure.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -nugetdir $nugetDir)`""
-        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib/netstandard2.0/Newtonsoft.Json.dll' -nugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/netstandard.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/Microsoft.CSharp.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Collections.Specialized.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Debug.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Diagnostics.Tools.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.IO.FileSystem.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Linq.Expressions.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Reflection.TypeExtensions.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.Extensions.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Runtime.InteropServices.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Text.RegularExpressions.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.Management.Infrastructure' '1.0.0' 'ref/netstandard1.6/Microsoft.Management.Infrastructure.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -NugetDir $nugetDir)`""
+        "-r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib/netstandard2.0/Newtonsoft.Json.dll' -NugetDir $nugetDir)`""
         "-define:CORECLR"
-        Get-ChildItem "$RepoDir/Rules" -filter *.cs -recurse |
-            select-object -expandproperty fullname |
-            where-object {$_ -ne "$RepoDir/Rules/UseSingularNouns.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
-            where-object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+        Get-ChildItem "$RepoDir/Rules" -Filter *.cs -Recurse |
+            Select-Object -ExpandProperty FullName |
+            Where-Object {$_ -ne "$RepoDir/Rules/UseSingularNouns.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
+            Where-Object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
     }
 
     if ($pscmdlet.ShouldProcess($rulesCoreDll, 'Create file')) {
         & $compiler $compilerArgs
 
-        if (-not (test-path $rulesCoreDll)) {
+        if (-not (Test-Path $rulesCoreDll)) {
             throw "Could not create file: $rulesCoreDll"
         }
     }
@@ -840,20 +840,20 @@ if ($PSVersion -contains 'Core') {
 
 
 
-write-verbose 'Generate PSScriptAnalyzer Module help files.' -verbose
+Write-Verbose 'Generate PSScriptAnalyzer Module help files.' -Verbose
 
 if ($PSCmdlet.ShouldProcess($helpDir, 'Create PSScriptAnalyzer Module Help Directory')) {
-    if ((get-module platyps) -or (get-module platyps -list)) {
-        platyPS\New-ExternalHelp -path "$RepoDir/docs/markdown" -outputpath $helpDir -force | out-null
+    if ((Get-Module platyPS) -or (Get-Module platyPS -list)) {
+        platyPS\New-ExternalHelp -Path "$RepoDir/docs/markdown" -OutputPath $helpDir -Force | Out-Null
     }
     else {
-        write-warning "TODO: build module help file with platyps" -warningaction continue
+        Write-Warning "TODO: build module help file with platyps" -WarningAction Continue
     }
 }
 
 
 
-write-verbose 'Run tests.' -verbose
+Write-Verbose 'Run tests.' -Verbose
 
 if ($PSCmdlet.ShouldProcess($testRunner, 'Create script that runs tests')) {
     @"
@@ -874,11 +874,11 @@ if ($PSCmdlet.ShouldProcess($testRunner, 'Create script that runs tests')) {
         Get-Item '$testResult'
     }
 "@ |
-        out-file $testRunner -encoding utf8 -force -confirm:$false
+        Out-File $testRunner -Encoding utf8 -Force -Confirm:$false
 }
 
 if ($PSCmdlet.ShouldProcess($testRunner, 'Run script that runs tests')) {
-    if (get-module pester -list) {
+    if (Get-Module Pester -list) {
         $powershellProcess = [System.Diagnostics.Process]::GetCurrentProcess()
         $powershellProcessPath = $powershellProcess.Path
         if (@('powershell', 'pwsh') -notcontains $powershellProcess.Name) {
@@ -888,20 +888,20 @@ if ($PSCmdlet.ShouldProcess($testRunner, 'Run script that runs tests')) {
         try {
             $ErrorActionPreference = [System.Management.Automation.ActionPreference]::Continue
 
-            write-verbose "& $powershellProcessPath -noprofile -executionpolicy remotesigned -noninteractive -file `"$testRunner`"" -verbose
-            & $powershellProcessPath -noprofile -executionpolicy remotesigned -noninteractive -file "$testRunner"
+            Write-Verbose "& $powershellProcessPath -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File `"$testRunner`"" -Verbose
+            & $powershellProcessPath -NoProfile -ExecutionPolicy RemoteSigned -NonInteractive -File "$testRunner"
         }
         finally {
             $ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
         }
     }
     else {
-        write-warning "TODO: test module with pester" -warningaction continue
+        Write-Warning "TODO: test module with pester" -WarningAction Continue
     }
 }
 
 
 
 if ((-not $WhatIfPreference) -and (Test-Path "$moduleBaseDir/*.psd1")) {
-    get-item "$moduleBaseDir"
+    Get-Item "$moduleBaseDir"
 }
