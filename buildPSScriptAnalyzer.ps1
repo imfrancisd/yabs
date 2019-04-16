@@ -344,13 +344,6 @@ Write-Verbose "$compiler" -Verbose
 
 
 
-Write-Verbose 'Generate string resources.' -Verbose
-
-Write-Verbose "$(ConvertResxStringsToCsharp "$RepoDir/Engine/Strings.resx" "$RepoDir/Engine/gen/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings")"
-Write-Verbose "$(ConvertResxStringsToCsharp "$RepoDir/Rules/Strings.resx" "$RepoDir/Rules/gen/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings")"
-
-
-
 if ($PSVersion -contains '5') {
 
     Write-Verbose 'Build PSv5 script analyzer engine.' -Verbose
@@ -381,10 +374,13 @@ if ($PSVersion -contains '5') {
         "-r:`"$DotNet45Dir/System.Core.dll`""
         "-r:`"$DotNet45Dir/System.ComponentModel.Composition.dll`""
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -NugetDir $nugetDir)`""
+
         Get-ChildItem "$RepoDir/Engine" -Filter *.cs -Recurse |
             Select-Object -ExpandProperty FullName |
             Where-Object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
             Where-Object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+
+        ConvertResxStringsToCsharp "$RepoDir/Engine/Strings.resx" "$RepoDir/tmp/Engine/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings"
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv5Dll, 'Create file')) {
@@ -446,9 +442,12 @@ if ($PSVersion -contains '5') {
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/Microsoft.Management.Infrastructure.dll' -NugetDir $nugetDir)`""
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.5.1.ReferenceAssemblies' '1.0.0' 'lib/net461/System.Management.Automation.dll' -NugetDir $nugetDir)`""
         "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -NugetDir $nugetDir)`""
+
         Get-ChildItem "$RepoDir/Rules" -Filter *.cs -Recurse |
             Select-Object -ExpandProperty FullName |
             Where-Object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+
+        ConvertResxStringsToCsharp "$RepoDir/Rules/Strings.resx" "$RepoDir/tmp/Rules/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings"
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv5Dll, 'Create file')) {
@@ -503,6 +502,8 @@ if ($PSVersion -contains '4') {
             Select-Object -ExpandProperty FullName |
             Where-Object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
             Where-Object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+
+        ConvertResxStringsToCsharp "$RepoDir/Engine/Strings.resx" "$RepoDir/tmp/Engine/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings"
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv4Dll, 'Create file')) {
@@ -574,6 +575,8 @@ if ($PSVersion -contains '4') {
         Get-ChildItem "$RepoDir/Rules" -Filter *.cs -Recurse |
             Select-Object -ExpandProperty FullName |
             Where-Object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+
+        ConvertResxStringsToCsharp "$RepoDir/Rules/Strings.resx" "$RepoDir/tmp/Rules/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings"
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv4Dll, 'Create file')) {
@@ -625,6 +628,8 @@ if ($PSVersion -contains '3') {
             Select-Object -ExpandProperty FullName |
             Where-Object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
             Where-Object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+
+        ConvertResxStringsToCsharp "$RepoDir/Engine/Strings.resx" "$RepoDir/tmp/Engine/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings"
     }
 
     if ($PSCmdlet.ShouldProcess($enginePSv3Dll, 'Create file')) {
@@ -688,9 +693,12 @@ if ($PSVersion -contains '3') {
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.3.ReferenceAssemblies' '1.0.0' 'lib/net4/System.Management.Automation.dll' -NugetDir $nugetDir)`""
         "-r:`"$(GetNugetResource 'Newtonsoft.Json' '11.0.2' 'lib/net45/Newtonsoft.Json.dll' -NugetDir $nugetDir)`""
         "-define:PSV3"
+
         Get-ChildItem "$RepoDir/Rules" -Filter *.cs -Recurse |
             Select-Object -ExpandProperty FullName |
             Where-Object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+
+        ConvertResxStringsToCsharp "$RepoDir/Rules/Strings.resx" "$RepoDir/tmp/Rules/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings"
     }
 
     if ($pscmdlet.ShouldProcess($rulesPSv3Dll, 'Create file')) {
@@ -739,11 +747,14 @@ if ($PSVersion -contains 'Core') {
         "-r:`"$(GetNugetResource 'Microsoft.NETCore.App' '2.1.10' 'ref/netcoreapp2.1/System.Threading.dll' -NugetDir $nugetDir)`""
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -NugetDir $nugetDir)`""
         "-define:CORECLR"
+
         Get-ChildItem "$RepoDir/Engine" -Filter *.cs -Recurse |
             Select-Object -ExpandProperty FullName |
             Where-Object {$_ -ne "$RepoDir/Engine/SafeDirectoryCatalog.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
             Where-Object {$_ -ne "$RepoDir/Engine/Commands/GetScriptAnalyzerLoggerCommand.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
             Where-Object {$_ -ne "$RepoDir/Engine/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+
+        ConvertResxStringsToCsharp "$RepoDir/Engine/Strings.resx" "$RepoDir/tmp/Engine/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer" "Strings"
     }
 
     if ($PSCmdlet.ShouldProcess($engineCoreDll, 'Create file')) {
@@ -824,10 +835,13 @@ if ($PSVersion -contains 'Core') {
         "-r:`"$(GetNugetResource 'Microsoft.PowerShell.SDK' '6.2.0' 'ref/netcoreapp2.1/System.Management.Automation.dll' -NugetDir $nugetDir)`""
         "-r:`"$(GetNugetResource 'Newtonsoft.Json' '12.0.1' 'lib/netstandard2.0/Newtonsoft.Json.dll' -NugetDir $nugetDir)`""
         "-define:CORECLR"
+
         Get-ChildItem "$RepoDir/Rules" -Filter *.cs -Recurse |
             Select-Object -ExpandProperty FullName |
             Where-Object {$_ -ne "$RepoDir/Rules/UseSingularNouns.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)} |
             Where-Object {$_ -ne "$RepoDir/Rules/Strings.Designer.cs".Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar)}
+
+        ConvertResxStringsToCsharp "$RepoDir/Rules/Strings.resx" "$RepoDir/tmp/Rules/Strings.cs" "Microsoft.Windows.PowerShell.ScriptAnalyzer.BuiltinRules" "Strings"
     }
 
     if ($pscmdlet.ShouldProcess($rulesCoreDll, 'Create file')) {
