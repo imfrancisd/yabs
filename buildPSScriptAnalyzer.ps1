@@ -133,7 +133,7 @@ function GetNugetResource {
     $resourcePath = [System.IO.Path]::Combine($packageDir, $RelativePath)
 
     if ((-not (test-path $resourcePath)) -and $PSCmdlet.ShouldProcess($packageUrl, 'Download nuget package')) {
-        mkdir $packageDir -force -confirm:$false | out-null
+        New-Item $packageDir -ItemType Directory -Force -Confirm:$false | out-null
         invoke-webrequest $packageUrl -outfile $packageZip -verbose
         if (test-path $packageZip) {
             expand-archive $packageZip -destinationpath $packageDir -force
@@ -183,7 +183,7 @@ function ConvertResxStringsToCsharp {
             throw "Path must be a file path or a hashtable."
         }
 
-        mkdir -force (split-path $Destination -parent) | out-null
+        New-Item (split-path $Destination -parent) -ItemType Directory -Force | out-null
 
         &{
             "using System;"
